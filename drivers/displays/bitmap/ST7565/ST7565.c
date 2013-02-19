@@ -42,7 +42,7 @@
 /**************************************************************************/
 #include <string.h>
 
-#include "st7565.h"
+#include "ST7565.h"
 
 #include "core/gpio/gpio.h"
 #include "core/systick/systick.h"
