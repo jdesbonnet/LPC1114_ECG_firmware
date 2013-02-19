@@ -87,7 +87,8 @@ void cpuPllSetup (cpuMultiplier_t multiplier)
   }
 
   // Configure PLL
-  SCB_PLLCLKSEL = SCB_CLKSEL_SOURCE_MAINOSC;    // Use the external crystal
+  //SCB_PLLCLKSEL = SCB_CLKSEL_SOURCE_MAINOSC;    // Use the external crystal
+  SCB_PLLCLKSEL = SCB_CLKSEL_SOURCE_INTERNALOSC;    // Use the internal osc
   SCB_PLLCLKUEN = SCB_PLLCLKUEN_UPDATE;         // Update clock source
   SCB_PLLCLKUEN = SCB_PLLCLKUEN_DISABLE;        // Toggle update register once
   SCB_PLLCLKUEN = SCB_PLLCLKUEN_UPDATE;         // Update clock source again
