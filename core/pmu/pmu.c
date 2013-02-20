@@ -102,6 +102,13 @@ void WAKEUP_IRQHandler(void)
 
   __asm volatile ("NOP");
 
+gpioSetValue (1, 8, 1);
+gpioSetValue (1, 8, 1);
+gpioSetValue (1, 8, 0); 
+gpioSetValue (1, 8, 1);
+gpioSetValue (1, 8, 1);
+gpioSetValue (1, 8, 0); 
+
   return;
 }
 
@@ -243,16 +250,18 @@ void pmuDeepSleep(uint32_t wakeupSeconds)
     /* Configure 0.1 as Timer0_32 MAT2 */
     IOCON_PIO0_1 &= ~IOCON_PIO0_1_FUNC_MASK;
     IOCON_PIO0_1 |= IOCON_PIO0_1_FUNC_CT32B0_MAT2;
+    //IOCON_JTAG_TDI_PIO0_11 &= ~IOCON_JTAG_TDI_PIO0_11_FUNC_MASK;
+    //IOCON_JTAG_TDI_PIO0_11 |= IOCON_JTAG_TDI_PIO0_11_FUNC_CT32B0_MAT3;
 
     /* Set appropriate timer delay */
-    TMR_TMR32B0MR0 = PMU_WDTCLOCKSPEED_HZ * wakeupSeconds;
+    TMR_TMR32B0MR0 = PMU_WDTCLOCKSPEED_HZ * wakeupSeconds / 10;
   
     /* Configure match control register to reset on MR0 */
     TMR_TMR32B0MCR |= (TMR_TMR32B0MCR_MR0_RESET_ENABLED);
   
     /* Configure external match register to set 0.1 high on match */
     TMR_TMR32B0EMR &= ~(0xFF<<4);                   // Clear EMR config bits
-    TMR_TMR32B0EMR |= TMR_TMR32B0EMR_EMC2_HIGH;     // Set MR2 (0.1) high on match
+    TMR_TMR32B0EMR |= TMR_TMR32B0EMR_EMC2_HIGH;     // Set MR2 (0.1) high on match  // was EMC2
 
     /* Enable wakeup interrupt (P0.1..11 and P1.0 can be used) */
     NVIC_EnableIRQ(WAKEUP1_IRQn);      // P0.1  (CT32B0_MAT2)
@@ -277,7 +286,8 @@ void pmuDeepSleep(uint32_t wakeupSeconds)
   {
     // No WDTOSC required since there is no timed wakeup
     // BOD is turned off, but can be turned on here if required
-    SCB_PDSLEEPCFG = SCB_PDSLEEPCFG_BOD_OFF_WDOSC_OFF;
+    //SCB_PDSLEEPCFG = SCB_PDSLEEPCFG_BOD_OFF_WDOSC_OFF;
+    SCB_PDSLEEPCFG = SCB_PDSLEEPCFG_BOD_OFF_WDOSC_ON;
   }
 
   // Send Wait For Interrupt command
