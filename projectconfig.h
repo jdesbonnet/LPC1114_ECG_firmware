@@ -382,8 +382,8 @@
 
     -----------------------------------------------------------------------*/
     #ifdef CFG_BRD_LPC1114_REFDESIGN
-      #define CFG_LED_PORT                (3)
-      #define CFG_LED_PIN                 (5)
+      #define CFG_LED_PORT                (1)
+      #define CFG_LED_PIN                 (8)
       #define CFG_LED_ON                  (0)
       #define CFG_LED_OFF                 (1)
     #endif
