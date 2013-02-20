@@ -7,7 +7,7 @@
 
     Software License Agreement (BSD License)
 
-    Copyright (c) 2011, microBuilder SARL
+    Copyright (c) 2010, microBuilder SARL
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -38,40 +38,95 @@
 
 #include "core/gpio/gpio.h"
 #include "core/systick/systick.h"
+#include "core/uart/uart.h"
+#include "core/pmu/pmu.h"
+#include "core/cpu/cpu.h"
+#include "lpc111x.h"
 
 #ifdef CFG_INTERFACE
   #include "core/cmd/cmd.h"
 #endif
 
-/**************************************************************************/
-/*! 
-    Main program entry point.  After reset, normal code execution will
-    begin here.
+int main(void) {
+	int i;
+	systemInit();
+	uartInit(115200);
+
+	pmuInit();
+
+	gpioSetValue (1, 8, 0); 
+
+
+  	while (1) {
+
+		//pmuInit();
+
+
+		// http://knowledgebase.nxp.com/showthread.php?t=187
+		//Disable reset pin functionality by making port 0 pin 0 a GPIO pin:
+		//LPC_IOCON->RESET_PIO0_0 |= 0x01
+
+ 		pmuDeepSleep(10);
+
+		// So sometimes this loop executes at WDT speed, and sometimes at
+		// full internal osc speed. Why?
+
+		//pmuRestoreHW();
+
+/*
+	// Switch back to internal osc
+	SCB_MAINCLKSEL = SCB_MAINCLKSEL_SOURCE_INTERNALOSC;
+	SCB_MAINCLKUEN = SCB_MAINCLKUEN_UPDATE;       // Update clock source
+	SCB_MAINCLKUEN = SCB_MAINCLKUEN_DISABLE;      // Toggle update register once
+	SCB_MAINCLKUEN = SCB_MAINCLKUEN_UPDATE;
+	// Wait until the clock is updated
+	while (!(SCB_MAINCLKUEN & SCB_MAINCLKUEN_UPDATE));
 */
-/**************************************************************************/
-int main(void)
-{
-  // Configure cpu and mandatory peripherals
-  systemInit();
 
-  uint32_t currentSecond, lastSecond;
-  currentSecond = lastSecond = 0;
+		
+		for (i = 0; i <4; i++) {
+			gpioSetValue (1, 8, 1);
+			gpioSetValue (1, 8, 0); 
+		}
 
-  while (1)
-  {
-    // Toggle LED once per second
-    currentSecond = systickGetSecondsActive();
-    if (currentSecond != lastSecond)
-    {
-      lastSecond = currentSecond;
-      gpioSetValue(CFG_LED_PORT, CFG_LED_PIN, lastSecond % 2);
-    }
+		// Poll for CLI input if CFG_INTERFACE is enabled in projectconfig.h
+		#ifdef CFG_INTERFACE 
+			//cmdPoll(); 
+		#endif
+	}
 
-    // Poll for CLI input if CFG_INTERFACE is enabled in projectconfig.h
-    #ifdef CFG_INTERFACE 
-      cmdPoll(); 
-    #endif
-  }
+ 	 return 0;
+}
 
-  return 0;
+/**
+ * Entering Deep Sleep Mode is covered in UM10398 §3.9.3.2. Copied verbatim:
+ *
+ * The following steps must be performed to enter Deep-sleep mode:
+ * 1. The DPDEN bit in the PCON [Power Control Register] register must be set to zero (Table 49).
+ * 2. Select the power configuration in Deep-sleep mode in the PDSLEEPCFG (Table 41)
+ * register.
+ *    a. If a timer-controlled wake-up is needed, ensure that the watchdog oscillator is
+ *       powered in the PDRUNCFG register and switch the clock source to WD oscillator
+ *       in the MAINCLKSEL register (Table 18).
+ *    b. If no timer-controlled wake-up is needed and the watchdog oscillator is shut down,
+ *       ensure that the IRC is powered in the PDRUNCFG register and switch the clock
+ *       source to IRC in the MAINCLKSEL register (Table 18). This ensures that the
+ *       system clock is shut down glitch-free.
+ * 3. Select the power configuration after wake-up in the PDAWAKECFG (Table 42)
+ *    register.
+ * 4. If an external pin is used for wake-up, enable and clear the wake-up pin in the start
+ *    logic registers (Table 36 to Table 39), and enable the start logic interrupt in the NVIC.
+ * 5. In the SYSAHBCLKCTRL register (Table 21), disable all peripherals except
+ *    counter/timer or WDT if needed.
+ * 6. Write one to the SLEEPDEEP bit in the ARM Cortex-M0 SCR register (Table 452).
+ * 7. Use the ARM WFI instruction.
+ * 
+ * Related registers:
+ * PCON (Power Control Register,  0x40038000)
+ * bit[1] DPDEN (Deep power-down mode enable)
+ * 
+ *
+ */
+void enterDeepSleepMode (void) {
+	//PMU_PMUCTRL = 
 }
