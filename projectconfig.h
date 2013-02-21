@@ -384,8 +384,8 @@
     #ifdef CFG_BRD_LPC1114_REFDESIGN
       #define CFG_LED_PORT                (1)
       #define CFG_LED_PIN                 (8)
-      #define CFG_LED_ON                  (0)
-      #define CFG_LED_OFF                 (1)
+      #define CFG_LED_ON                  (1)
+      #define CFG_LED_OFF                 (0)
     #endif
 
     #ifdef CFG_BRD_LPC1114_802154WIRELESS

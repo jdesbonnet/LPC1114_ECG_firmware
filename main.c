@@ -52,21 +52,45 @@ int main(void) {
 	systemInit();
 	uartInit(115200);
 
-	pmuInit();
-
 	gpioSetValue (1, 8, 0); 
 
-
   	while (1) {
-
-		//pmuInit();
-
 
 		// http://knowledgebase.nxp.com/showthread.php?t=187
 		//Disable reset pin functionality by making port 0 pin 0 a GPIO pin:
 		//LPC_IOCON->RESET_PIO0_0 |= 0x01
+		// IOCONFIG base: 0x4004 4000
+		// IOCON_nRESET_PIO0_0   : 0x4004 400C
+		IOCON_nRESET_PIO0_0  = 0x01; // selects 0.0 as GPIO, 0x00 as RESET
+		gpioSetDir(0, 0, 1); // 0.0 as output
+		gpioSetValue (0, 0, 1); // 0.0 HIGH
+		// (will require power cycle to reset)
+
+		// Want all pins as GPIO, pullups off, output at 0V.
+		IOCON_PIO0_1 = IOCON_PIO0_1_FUNC_GPIO;
+		IOCON_PIO0_2 = IOCON_PIO0_2_FUNC_GPIO;
+		IOCON_PIO0_3 = IOCON_PIO0_3_FUNC_GPIO;
+		IOCON_PIO0_4 = IOCON_PIO0_4_FUNC_GPIO;
+		IOCON_PIO0_4 = IOCON_PIO0_4_FUNC_GPIO;
+		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
+		IOCON_PIO0_6 = IOCON_PIO0_6_FUNC_GPIO;
+		IOCON_PIO0_7 = IOCON_PIO0_7_FUNC_GPIO;
+		IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO;
+		IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO;
+		for (i = 1; i < 10; i++) {
+			gpioSetDir (0,i,1); // 1 = output
+			gpioSetValue (0,i,1);
+		}
+		//IOCON_PIO0_10 = IOCON_PIO0_10_FUNC_GPIO;
+		//IOCON_PIO0_11 = IOCON_PIO0_11_FUNC_GPIO;
+		
+// Set LED pin as output and turn LED off
+  //gpioSetDir(CFG_LED_PORT, CFG_LED_PIN, 0); // dir=0 is input, assume !=0 is output
+  //gpioSetValue(CFG_LED_PORT, CFG_LED_PIN, CFG_LED_OFF);
 
  		pmuDeepSleep(10);
+
+  //gpioSetDir(CFG_LED_PORT, CFG_LED_PIN, 1);
 
 		// So sometimes this loop executes at WDT speed, and sometimes at
 		// full internal osc speed. Why?
@@ -85,8 +109,8 @@ int main(void) {
 
 		
 		for (i = 0; i <4; i++) {
-			gpioSetValue (1, 8, 1);
-			gpioSetValue (1, 8, 0); 
+			gpioSetValue (1, 8, CFG_LED_ON);
+			gpioSetValue (1, 8, CFG_LED_OFF); 
 		}
 
 		// Poll for CLI input if CFG_INTERFACE is enabled in projectconfig.h
