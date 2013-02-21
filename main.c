@@ -61,9 +61,11 @@ int main(void) {
 		//LPC_IOCON->RESET_PIO0_0 |= 0x01
 		// IOCONFIG base: 0x4004 4000
 		// IOCON_nRESET_PIO0_0   : 0x4004 400C
+/*
 		IOCON_nRESET_PIO0_0  = 0x01; // selects 0.0 as GPIO, 0x00 as RESET
 		gpioSetDir(0, 0, 1); // 0.0 as output
 		gpioSetValue (0, 0, 1); // 0.0 HIGH
+*/
 		// (will require power cycle to reset)
 
 		// Want all pins as GPIO, pullups off, output at 0V.
