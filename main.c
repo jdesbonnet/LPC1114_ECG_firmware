@@ -47,12 +47,31 @@
   #include "core/cmd/cmd.h"
 #endif
 
+#define INPUT (0)
+#define OUTPUT (1)
+
 int main(void) {
 	int i;
 	systemInit();
 	uartInit(115200);
 
-	gpioSetValue (1, 8, 0); 
+	gpioSetValue (1, 8, 0);
+	gpioSetValue (1, 8, 1);
+	gpioSetValue (1, 8, 0);
+	gpioSetValue (1, 8, 1);
+	gpioSetValue (1, 8, 0);
+
+/*
+	// Making this input draws 182µA, output just 61µA
+	gpioSetDir (1,8,INPUT);
+	for (i = 1; i < 10; i++) {
+		// 386µA if set to input(0), 63µA if output (1)
+		gpioSetDir (0,i,0); // 1 = output
+		gpioSetValue (0,i,1); // this seems to make no difference
+	}
+	gpioDisableInternalResistors();
+*/
+
 
   	while (1) {
 
@@ -61,60 +80,65 @@ int main(void) {
 		//LPC_IOCON->RESET_PIO0_0 |= 0x01
 		// IOCONFIG base: 0x4004 4000
 		// IOCON_nRESET_PIO0_0   : 0x4004 400C
+
+		// The following conditioning of RESET does appear to yield a saveing of 8µA.
+		// However it will disable RESET and a power cycle is needed to re-enter bootloader.
+
 /*
 		IOCON_nRESET_PIO0_0  = 0x01; // selects 0.0 as GPIO, 0x00 as RESET
 		gpioSetDir(0, 0, 1); // 0.0 as output
 		gpioSetValue (0, 0, 1); // 0.0 HIGH
 */
-		// (will require power cycle to reset)
+
+
+
 
 		// Want all pins as GPIO, pullups off, output at 0V.
-		IOCON_PIO0_1 = IOCON_PIO0_1_FUNC_GPIO;
-		IOCON_PIO0_2 = IOCON_PIO0_2_FUNC_GPIO;
-		IOCON_PIO0_3 = IOCON_PIO0_3_FUNC_GPIO;
-		IOCON_PIO0_4 = IOCON_PIO0_4_FUNC_GPIO;
-		IOCON_PIO0_4 = IOCON_PIO0_4_FUNC_GPIO;
-		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
-		IOCON_PIO0_6 = IOCON_PIO0_6_FUNC_GPIO;
-		IOCON_PIO0_7 = IOCON_PIO0_7_FUNC_GPIO;
-		IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO;
-		IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO;
-		for (i = 1; i < 10; i++) {
+		IOCON_PIO0_1 = IOCON_PIO0_1_FUNC_GPIO; // pin 24 (also bootloader entry)
+		IOCON_PIO0_2 = IOCON_PIO0_2_FUNC_GPIO; // pin 25
+		IOCON_PIO0_3 = IOCON_PIO0_3_FUNC_GPIO; // pin 26
+		IOCON_PIO0_4 = IOCON_PIO0_4_FUNC_GPIO; // pin 27
+		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO; // pin 
+		IOCON_PIO0_6 = IOCON_PIO0_6_FUNC_GPIO; // pin 
+		IOCON_PIO0_7 = IOCON_PIO0_7_FUNC_GPIO; // pin 28
+		IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO; // pin 1
+		IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO; // pin 2
+		IOCON_JTAG_TCK_PIO0_10 = IOCON_JTAG_TCK_PIO0_10_FUNC_GPIO;
+		IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO; 
+		IOCON_JTAG_TMS_PIO1_0 = IOCON_JTAG_TMS_PIO1_0_FUNC_GPIO;	
+		IOCON_JTAG_TDO_PIO1_1 = IOCON_JTAG_TDO_PIO1_1_FUNC_GPIO;
+		//IOCON_JTAG_nTRST_PIO1_2 = IOCON_JTAG_nTRST_PIO1_2_FUNC_GPIO; // causes extra 150µA drain?!
+		IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
+		IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
+		IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
+		IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS MADE ALL THE DIFFERENCE! 4µA
+
+		for (i = 0; i < 10; i++) {
+			// 386µA if set to input(0), 63µA if output (1)
 			gpioSetDir (0,i,1); // 1 = output
-			gpioSetValue (0,i,1);
+			gpioSetValue (0,i,1); // this seems to make no difference
 		}
-		//IOCON_PIO0_10 = IOCON_PIO0_10_FUNC_GPIO;
-		//IOCON_PIO0_11 = IOCON_PIO0_11_FUNC_GPIO;
-		
-// Set LED pin as output and turn LED off
-  //gpioSetDir(CFG_LED_PORT, CFG_LED_PIN, 0); // dir=0 is input, assume !=0 is output
-  //gpioSetValue(CFG_LED_PORT, CFG_LED_PIN, CFG_LED_OFF);
+		for (i = 0; i < 7; i++) {
+			gpioSetDir (1,i,1); // 1 = output
+			gpioSetValue (1,i,1); // this seems to make no difference
+		}
+		//gpioSetDir (9,i,1); // 1 = output
+		//gpioSetValue (9,i,1); // this seems to make no difference
 
- 		pmuDeepSleep(10);
+ 		pmuDeepSleep(1);
+		//pmuPowerDown();
 
-  //gpioSetDir(CFG_LED_PORT, CFG_LED_PIN, 1);
 
 		// So sometimes this loop executes at WDT speed, and sometimes at
 		// full internal osc speed. Why?
+		// Observed that the wake IRQ was serviced *after* the LED pin toggle.
 
-		//pmuRestoreHW();
-
-/*
-	// Switch back to internal osc
-	SCB_MAINCLKSEL = SCB_MAINCLKSEL_SOURCE_INTERNALOSC;
-	SCB_MAINCLKUEN = SCB_MAINCLKUEN_UPDATE;       // Update clock source
-	SCB_MAINCLKUEN = SCB_MAINCLKUEN_DISABLE;      // Toggle update register once
-	SCB_MAINCLKUEN = SCB_MAINCLKUEN_UPDATE;
-	// Wait until the clock is updated
-	while (!(SCB_MAINCLKUEN & SCB_MAINCLKUEN_UPDATE));
-*/
-
-		
+/*		
 		for (i = 0; i <4; i++) {
 			gpioSetValue (1, 8, CFG_LED_ON);
 			gpioSetValue (1, 8, CFG_LED_OFF); 
 		}
-
+*/
 		// Poll for CLI input if CFG_INTERFACE is enabled in projectconfig.h
 		#ifdef CFG_INTERFACE 
 			//cmdPoll(); 
@@ -124,35 +148,3 @@ int main(void) {
  	 return 0;
 }
 
-/**
- * Entering Deep Sleep Mode is covered in UM10398 §3.9.3.2. Copied verbatim:
- *
- * The following steps must be performed to enter Deep-sleep mode:
- * 1. The DPDEN bit in the PCON [Power Control Register] register must be set to zero (Table 49).
- * 2. Select the power configuration in Deep-sleep mode in the PDSLEEPCFG (Table 41)
- * register.
- *    a. If a timer-controlled wake-up is needed, ensure that the watchdog oscillator is
- *       powered in the PDRUNCFG register and switch the clock source to WD oscillator
- *       in the MAINCLKSEL register (Table 18).
- *    b. If no timer-controlled wake-up is needed and the watchdog oscillator is shut down,
- *       ensure that the IRC is powered in the PDRUNCFG register and switch the clock
- *       source to IRC in the MAINCLKSEL register (Table 18). This ensures that the
- *       system clock is shut down glitch-free.
- * 3. Select the power configuration after wake-up in the PDAWAKECFG (Table 42)
- *    register.
- * 4. If an external pin is used for wake-up, enable and clear the wake-up pin in the start
- *    logic registers (Table 36 to Table 39), and enable the start logic interrupt in the NVIC.
- * 5. In the SYSAHBCLKCTRL register (Table 21), disable all peripherals except
- *    counter/timer or WDT if needed.
- * 6. Write one to the SLEEPDEEP bit in the ARM Cortex-M0 SCR register (Table 452).
- * 7. Use the ARM WFI instruction.
- * 
- * Related registers:
- * PCON (Power Control Register,  0x40038000)
- * bit[1] DPDEN (Deep power-down mode enable)
- * 
- *
- */
-void enterDeepSleepMode (void) {
-	//PMU_PMUCTRL = 
-}
