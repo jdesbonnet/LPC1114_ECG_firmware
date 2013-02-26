@@ -90,9 +90,6 @@ int main(void) {
 		gpioSetValue (0, 0, 1); // 0.0 HIGH
 */
 
-
-
-
 		// Want all pins as GPIO, pullups off, output at 0V.
 		IOCON_PIO0_1 = IOCON_PIO0_1_FUNC_GPIO; // pin 24 (also bootloader entry)
 		IOCON_PIO0_2 = IOCON_PIO0_2_FUNC_GPIO; // pin 25
@@ -127,8 +124,10 @@ int main(void) {
 			gpioSetDir (1,i,1); // 1 = output
 			gpioSetValue (1,i,1); // this seems to make no difference
 		}
-		//gpioSetDir (9,i,1); // 1 = output
-		//gpioSetValue (9,i,1); // this seems to make no difference
+		for (i = 9; i < 12; i++) {
+			gpioSetDir (1,i,1); // 1 = output
+			gpioSetValue (1,i,1); // this seems to make no difference
+		}
 
  		pmuDeepSleep(10);
 		//pmuPowerDown();
