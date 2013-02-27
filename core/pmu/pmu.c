@@ -254,7 +254,7 @@ void pmuDeepSleep(uint32_t wakeupSeconds)
     //IOCON_JTAG_TDI_PIO0_11 |= IOCON_JTAG_TDI_PIO0_11_FUNC_CT32B0_MAT3;
 
     /* Set appropriate timer delay */
-    TMR_TMR32B0MR0 = PMU_WDTCLOCKSPEED_HZ * wakeupSeconds / 10;
+    TMR_TMR32B0MR0 = PMU_WDTCLOCKSPEED_HZ * wakeupSeconds / 1;
   
     /* Configure match control register to reset on MR0 */
     TMR_TMR32B0MCR |= (TMR_TMR32B0MCR_MR0_RESET_ENABLED);
