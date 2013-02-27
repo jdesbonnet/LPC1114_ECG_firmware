@@ -41,6 +41,8 @@
 #include "core/uart/uart.h"
 #include "core/pmu/pmu.h"
 #include "core/cpu/cpu.h"
+#include "core/ssp/ssp.h"
+
 #include "lpc111x.h"
 
 #ifdef CFG_INTERFACE
@@ -54,30 +56,30 @@ int main(void) {
 	int i;
 	systemInit();
 	uartInit(115200);
+	set_pins();
+
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+
+	uint8_t request[SSP_FIFOSIZE];
+	uint8_t response[SSP_FIFOSIZE];
+
 
   	while (1) {
 
-
-		set_pins();
- 		pmuDeepSleep(10);
-		//pmuPowerDown();
-
-
-		// So sometimes this loop executes at WDT speed, and sometimes at
-		// full internal osc speed. Why?
-		// Observed that the wake IRQ was serviced *after* the LED pin toggle.
-
-/*		
-		for (i = 0; i <4; i++) {
-			gpioSetValue (1, 8, CFG_LED_ON);
-			gpioSetValue (1, 8, CFG_LED_OFF); 
+		for (i = 0; i < 4096; i++) {
+			// bit 13 (bit 5 of first byte) is /GA
+			// bit 12 (bit 4 of first byte) is /SHDN
+			//request[0] = 0x18 | (i&0x07);
+			request[0] = 0x10 | ((i>>8)&0x0f);
+			//
+			//request[1] = (uint8_t)(i & 0xff);
+			request[1] = i & 0xff;
+			ssp0Select();
+			sspSend(0, (uint8_t *)&request, 2);
+			ssp0Deselect();
 		}
-*/
-		// Poll for CLI input if CFG_INTERFACE is enabled in projectconfig.h
-		#ifdef CFG_INTERFACE 
-			//cmdPoll(); 
-		#endif
 	}
+
 
  	 return 0;
 }
