@@ -233,7 +233,8 @@ void sspInit (uint8_t portNum, sspClockPolarity_t polarity, sspClockPhase_t phas
     SSP_SSP0CR0 = configReg;
   
     /* Clock prescale register must be even and at least 2 in master mode */
-    SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV2;
+    //SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV2;
+    SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV4;
   
     /* Clear the Rx FIFO */
     uint8_t i, Dummy=Dummy;
