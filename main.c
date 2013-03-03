@@ -65,7 +65,13 @@ int main(void) {
 
 	uint32_t frame[12];
 
+
+
+
+
+
   	while (1) {
+
 
 	// Write to CMREFCTL
 	ssp0Select();
@@ -80,12 +86,7 @@ int main(void) {
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
 
-	// Write to GPIOCTL
-	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
-	ssp0Select();
-	request[0] = 0x86; request[1] = 0x00; request[2]=0x00; request[3]=0x04;
-	sspSend(0, (uint8_t *)&request, 4);
-	ssp0Deselect();
+
 
 
 	// Write to ECGCTL
@@ -94,24 +95,35 @@ int main(void) {
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
 
-	// Write to FRAMES
+
+
+	// Write to GPIOCTL
+	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
 	ssp0Select();
-	request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
+	request[0] = 0x86; request[1] = 0x00; request[2]=0x00; request[3]=0x04;
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
 
 
-	for (i = 0; i < 10; i++) {
+		// Write to FRAMES
 		ssp0Select();
-		// Receive 32 bits
-		//sspReceive (0, (uint8_t *)&response, 4);
-		sspReceive (0, (uint8_t *)&frame[i], 4);
+		request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
+		sspSend(0, (uint8_t *)&request, 4);
 		ssp0Deselect();
-	}
-	for (i = 0; i < 10; i++) {
-		printf ("%0x " , frame[i]);
-	}
-	printf ("\r\n");
+
+
+		for (i = 0; i < 10; i++) {
+			ssp0Select();
+			// Receive 32 bits
+			//sspReceive (0, (uint8_t *)&response, 4);
+			sspReceive (0, (uint8_t *)&frame[i], 4);
+			ssp0Deselect();
+			//printf ("%0x " , frame[i]);
+		}
+		for (i = 0; i < 10; i++) {
+			printf ("%0x " , frame[i]);
+		}
+		printf ("\r\n");
 
 		//for (i = 0; i < 2048; i++) {
 			// __asm volatile ("NOP");
