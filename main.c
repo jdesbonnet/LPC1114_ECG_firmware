@@ -63,21 +63,60 @@ int main(void) {
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
 
+	uint32_t frame[12];
 
   	while (1) {
 
-		for (i = 0; i < 4096; i++) {
-			// bit 13 (bit 5 of first byte) is /GA
-			// bit 12 (bit 4 of first byte) is /SHDN
-			//request[0] = 0x18 | (i&0x07);
-			request[0] = 0x10 | ((i>>8)&0x0f);
-			//
-			//request[1] = (uint8_t)(i & 0xff);
-			request[1] = i & 0xff;
-			ssp0Select();
-			sspSend(0, (uint8_t *)&request, 2);
-			ssp0Deselect();
-		}
+	// Write to CMREFCTL
+	ssp0Select();
+	request[0] = 0x85; request[1] = 0xE0; request[2]=0x00; request[3]=0x0B;
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
+
+
+	// Write to FRMCTL
+	ssp0Select();
+	request[0] = 0x8A; request[1] = 0x07; request[2]=0x92/*0x96*/; request[3]=0x00;
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
+
+	// Write to GPIOCTL
+	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
+	ssp0Select();
+	request[0] = 0x86; request[1] = 0x00; request[2]=0x00; request[3]=0x04;
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
+
+
+	// Write to ECGCTL
+	ssp0Select();
+	request[0] = 0x81; request[1] = 0xF8; request[2]=0x04; request[3]=0xAE;
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
+
+	// Write to FRAMES
+	ssp0Select();
+	request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
+
+
+	for (i = 0; i < 10; i++) {
+		ssp0Select();
+		// Receive 32 bits
+		//sspReceive (0, (uint8_t *)&response, 4);
+		sspReceive (0, (uint8_t *)&frame[i], 4);
+		ssp0Deselect();
+	}
+	for (i = 0; i < 10; i++) {
+		printf ("%0x " , frame[i]);
+	}
+	printf ("\r\n");
+
+		//for (i = 0; i < 2048; i++) {
+			// __asm volatile ("NOP");
+		//}
+
 	}
 
 
@@ -120,8 +159,8 @@ void set_pins(void) {
 	IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
 	IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
-	IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS *SEEMED* MADE ALL THE DIFFERENCE! 4µA
-	IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO;
+	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS *SEEMED* MADE ALL THE DIFFERENCE! 4µA
+	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO;
 	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO;
 	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO;
 	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO;
