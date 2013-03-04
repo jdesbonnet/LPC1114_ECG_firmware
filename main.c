@@ -55,11 +55,15 @@ int main(void) {
 	systemInit();
 	uartInit(115200);
 
+	int j = 0;
   	while (1) {
 
+		j++;
 
 		set_pins();
- 		pmuDeepSleep(10);
+ 		pmuDeepSleep(100);
+		printf ("Hello %d\r\n",j);
+
 		//pmuPowerDown();
 
 
@@ -118,8 +122,8 @@ void set_pins(void) {
 	IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
 	IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
-	IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS *SEEMED* MADE ALL THE DIFFERENCE! 4µA
-	IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO;
+	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // UART RXD
+	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // UART TXD
 	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO;
 	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO;
 	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO;
