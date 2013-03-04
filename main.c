@@ -66,18 +66,13 @@ int main(void) {
 
   	while (1) {
 
-		for (i = 0; i < 4096; i++) {
-			// bit 13 (bit 5 of first byte) is /GA
-			// bit 12 (bit 4 of first byte) is /SHDN
-			//request[0] = 0x18 | (i&0x07);
-			request[0] = 0x10 | ((i>>8)&0x0f);
-			//
-			//request[1] = (uint8_t)(i & 0xff);
-			request[1] = i & 0xff;
-			ssp0Select();
-			sspSend(0, (uint8_t *)&request, 2);
-			ssp0Deselect();
-		}
+		request[0] = 0x20 | 0x00; // RREG ID
+		request[1] = 0x00;
+		ssp0Select();
+		sspSend(0, (uint8_t *)&request, 2);
+		sspResponse(0, (uint8_t *)&response, 2);
+		ssp0Deselect();
+		
 	}
 
 
