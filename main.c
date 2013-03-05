@@ -66,17 +66,69 @@ int main(void) {
 
   	while (1) {
 
-		request[0] = 0x20 | 0x00; // RREG ID
-		request[1] = 0x00;
+
+
+
 		ssp0Select();
-		sspSend(0, (uint8_t *)&request, 2);
-		sspResponse(0, (uint8_t *)&response, 2);
+		request[0] = 0x06; // RESET
+		sspSend(0, (uint8_t *)&request, 1);
+		//ssp0Deselect();
 		ssp0Deselect();
+
+
+		delay();
+
+
+
+		ssp0Select();
+		request[0] = 0x02; // WAKEUP
+		sspSend(0, (uint8_t *)&request, 1);
+		ssp0Deselect();
+
+		ssp0Select();
+		request[0] = 0x08; // START
+		sspSend(0, (uint8_t *)&request, 1);
+		ssp0Deselect();
+
+		ssp0Select();
+		request[0] = 0x10; // RDATAC
+		sspSend(0, (uint8_t *)&request, 1);
+		ssp0Deselect();
+
+
+		request[0] = 0x20 | 0x00; // RREG ID
+		//request[1] = 0x0A; // 10+1==11 registers
+		request[1] = 0x04; // 0+1==5 register
+		request[2] = 0x00;
+		request[3] = 0x00;
+		request[4] = 0x00;
+		request[5] = 0x00;
+		request[6] = 0x00;
+		ssp0Select();
+		//sspSend(0, (uint8_t *)&request, 2);
+		sspSend(0, (uint8_t *)&request, 7);
+		//sspReceive(0,(uint8_t *)&response, 5);
+		ssp0Deselect();
+
 		
+		for (i = 0; i < 5; i++) {
+			printf ("%0x ",response[i]);
+		}
+		printf ("\r\n");
+		
+		delay();
+		delay();
 	}
 
 
  	 return 0;
+}
+
+void delay () {
+	int i;
+	for (i = 0; i < 4098; i++) {
+		__asm volatile ("NOP");
+	}
 }
 
 void set_pins(void) {
@@ -115,8 +167,8 @@ void set_pins(void) {
 	IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
 	IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
-	IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS *SEEMED* MADE ALL THE DIFFERENCE! 4µA
-	IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO;
+	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // UART
+	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // UART
 	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO;
 	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO;
 	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO;
