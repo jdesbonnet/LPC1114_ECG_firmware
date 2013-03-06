@@ -52,12 +52,14 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+void delay(void);
 void set_pins(void);
-void adas1000_write_register (uint8_t reg, uint32_t value);
-void adas1000_read_register (uint8_t reg);
+void adas1000_register_write (uint8_t reg, uint32_t value);
+uint32_t adas1000_register_read (uint8_t reg);
 
 int main(void) {
-	int i;
+	int i,j;
+	uint32_t val;
 	systemInit();
 	uartInit(115200);
 	set_pins();
@@ -76,27 +78,45 @@ int main(void) {
 
   	while (1) {
 
+	// Let's try to read something!
+
+	printf ("OPSTAT (on start)= %x\r\n" , adas1000_register_read(0x1f));
 
 	// Write to CMREFCTL
-	adas1000_write_register (0x05, 0xE0000B);
+	adas1000_register_write (0x05, 0xE0000B);
 
 	// Write to FRMCTL
-	adas1000_write_register (0x0A, 0x079200);
+	adas1000_register_write (0x0A, 0x079200);
 
 	// Write to ECGCTL
-	adas1000_write_register (0x01, 0xF804AE);
+	adas1000_register_write (0x01, 0xF804AE);
 
 	// Write to GPIOCTL
 	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
-	adas1000_write_register (0x06, 0x000004);
+	adas1000_register_write (0x06, 0x000004);
+
+
+	delay();
+
+	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
+	printf ("CMREFCTL= %x\r\n" , adas1000_register_read(0x05));
+	printf ("FRMCTL= %x\r\n" , adas1000_register_read(0x0a));
+	printf ("ECGCTL= %x\r\n" , adas1000_register_read(0x01));	
+	printf ("GPIOCTL= %x\r\n" , adas1000_register_read(0x06));	
+	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
+
 
 	// Write to FRAMES
+/*
 	ssp0Select();
 	request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
-	//adas1000_write_register (0x40, 0x000000);
+*/
+	adas1000_register_read (0x40);
 
+
+	for (j = 0; j<8; j++) {
 		for (i = 0; i < 10; i++) {
 			ssp0Select();
 			// Receive 32 bits
@@ -105,14 +125,17 @@ int main(void) {
 			ssp0Deselect();
 			//printf ("%0x " , frame[i]);
 		}
+
+	
 		for (i = 0; i < 10; i++) {
 			printf ("%0x " , frame[i]);
 		}
 		printf ("\r\n");
-
+	
 		//for (i = 0; i < 2048; i++) {
 			// __asm volatile ("NOP");
 		//}
+	}
 
 	}
 
@@ -120,7 +143,14 @@ int main(void) {
  	 return 0;
 }
 
-void adas1000_write_register (uint8_t reg, uint32_t value) {
+void delay(void) {
+	int i;
+	for (i = 0; i < 1024; i++) {
+		__asm volatile ("NOP");
+	}
+}
+
+void adas1000_register_write (uint8_t reg, uint32_t value) {
 
 	uint8_t request[4];
 	request[0] = 0x80 | (reg & 0x7f);
@@ -131,6 +161,18 @@ void adas1000_write_register (uint8_t reg, uint32_t value) {
 	ssp0Select();
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
+}
+
+uint32_t adas1000_register_read (uint8_t reg) {
+	uint8_t request[4];
+	//uint8_t response[4];
+	uint32_t response;
+	ssp0Select();
+	request[0] = reg & 0x7F;
+	sspSend(0, (uint8_t *)&request, 4);
+	sspReceive (0, (uint8_t *)&response, 4);
+	ssp0Deselect();
+	return response;
 }
 
 void set_pins(void) {
