@@ -188,6 +188,7 @@ void sspInit (uint8_t portNum, sspClockPolarity_t polarity, sspClockPhase_t phas
   
     /* Divide by 2 (SSPCLKDIV also enables to SSP CLK) */
     SCB_SSP0CLKDIV = SCB_SSP0CLKDIV_DIV2;
+    //SCB_SSP0CLKDIV = 8;
   
     /* Set P0.8 to SSP MISO */
     IOCON_PIO0_8 &= ~IOCON_PIO0_8_FUNC_MASK;
@@ -234,7 +235,7 @@ void sspInit (uint8_t portNum, sspClockPolarity_t polarity, sspClockPhase_t phas
   
     /* Clock prescale register must be even and at least 2 in master mode */
     //SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV2;
-    SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV4;
+    SSP_SSP0CPSR = 8;
   
     /* Clear the Rx FIFO */
     uint8_t i, Dummy=Dummy;
