@@ -56,6 +56,7 @@ void delay(void);
 void set_pins(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
+uint32_t reverse_byte_order (uint32_t in);
 
 int main(void) {
 	int i,j;
@@ -80,7 +81,7 @@ int main(void) {
 
 	// Let's try to read something!
 
-	printf ("OPSTAT (on start)= %x\r\n" , adas1000_register_read(0x1f));
+	//printf ("OPSTAT (on start)= %x\r\n" , adas1000_register_read(0x1f));
 
 	// Write to CMREFCTL
 	adas1000_register_write (0x05, 0xE0000B);
@@ -98,22 +99,19 @@ int main(void) {
 
 	delay();
 
+/*
 	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
 	printf ("CMREFCTL= %x\r\n" , adas1000_register_read(0x05));
 	printf ("FRMCTL= %x\r\n" , adas1000_register_read(0x0a));
 	printf ("ECGCTL= %x\r\n" , adas1000_register_read(0x01));	
 	printf ("GPIOCTL= %x\r\n" , adas1000_register_read(0x06));	
 	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
-
-
-	// Write to FRAMES
-/*
-	ssp0Select();
-	request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
-	sspSend(0, (uint8_t *)&request, 4);
-	ssp0Deselect();
 */
+
+	// This starts the data...
 	adas1000_register_read (0x40);
+
+	delay();
 
 
 	for (j = 0; j<8; j++) {
@@ -128,13 +126,10 @@ int main(void) {
 
 	
 		for (i = 0; i < 10; i++) {
-			printf ("%0x " , frame[i]);
+			printf ("%0x " , reverse_byte_order(frame[i]));
 		}
 		printf ("\r\n");
 	
-		//for (i = 0; i < 2048; i++) {
-			// __asm volatile ("NOP");
-		//}
 	}
 
 	}
@@ -166,13 +161,18 @@ void adas1000_register_write (uint8_t reg, uint32_t value) {
 uint32_t adas1000_register_read (uint8_t reg) {
 	uint8_t request[4];
 	//uint8_t response[4];
-	uint32_t response;
+	uint32_t response, ret;
 	ssp0Select();
 	request[0] = reg & 0x7F;
 	sspSend(0, (uint8_t *)&request, 4);
 	sspReceive (0, (uint8_t *)&response, 4);
 	ssp0Deselect();
-	return response;
+	// Reverse byte order
+	return reverse_byte_order(response);
+}
+
+uint32_t reverse_byte_order (uint32_t in) {
+	return (in>>24) | ((in>>8)&0x0000ff00) | ((in<<8)&0x00ff0000) | (in<<24);
 }
 
 void set_pins(void) {
