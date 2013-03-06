@@ -67,8 +67,6 @@ int main(void) {
   	while (1) {
 
 
-
-
 		ssp0Select();
 		request[0] = 0x06; // RESET
 		sspSend(0, (uint8_t *)&request, 1);
@@ -157,9 +155,14 @@ void set_pins(void) {
 	IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO; // pin 
 	IOCON_PIO0_6 = IOCON_PIO0_6_FUNC_GPIO; // pin 
 	IOCON_PIO0_7 = IOCON_PIO0_7_FUNC_GPIO; // pin 28
-	IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO; // pin 1
-	IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO; // pin 2
-	IOCON_JTAG_TCK_PIO0_10 = IOCON_JTAG_TCK_PIO0_10_FUNC_GPIO;
+
+	// Found that enabling/disabling these lines affected SPI trace.
+	// Reason it seems that this disables pullup (enabled by default)
+	IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO; // pin 1 MISO
+	IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO; // pin 2 MOSI
+
+
+	//IOCON_JTAG_TCK_PIO0_10 = IOCON_JTAG_TCK_PIO0_10_FUNC_GPIO;
 	IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO; 
 	IOCON_JTAG_TMS_PIO1_0 = IOCON_JTAG_TMS_PIO1_0_FUNC_GPIO;	
 	IOCON_JTAG_TDO_PIO1_1 = IOCON_JTAG_TDO_PIO1_1_FUNC_GPIO;
