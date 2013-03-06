@@ -126,7 +126,8 @@ int main(void) {
 
 	
 		for (i = 0; i < 10; i++) {
-			printf ("%0x " , reverse_byte_order(frame[i]));
+			//printf ("%0x " , reverse_byte_order(frame[i]));
+			printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
 		}
 		printf ("\r\n");
 	
