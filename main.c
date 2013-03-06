@@ -60,7 +60,7 @@ uint32_t reverse_byte_order (uint32_t in);
 
 int main(void) {
 	int i,j;
-	uint32_t val;
+	uint32_t la,ra,ll;
 	systemInit();
 	uartInit(115200);
 	set_pins();
@@ -121,15 +121,19 @@ int main(void) {
 			//sspReceive (0, (uint8_t *)&response, 4);
 			sspReceive (0, (uint8_t *)&frame[i], 4);
 			ssp0Deselect();
-			//printf ("%0x " , frame[i]);
 		}
 
 	
 		for (i = 0; i < 10; i++) {
 			//printf ("%0x " , reverse_byte_order(frame[i]));
-			printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
+			//printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
 		}
-		printf ("\r\n");
+
+		la = reverse_byte_order(frame[0]&0xffffff);
+		ll = reverse_byte_order(frame[1]&0xffffff);
+		ra = reverse_byte_order(frame[2]&0xffffff);
+		printf ("%d ", la-ra); 
+		printf ("\n");
 	
 	}
 
