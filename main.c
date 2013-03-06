@@ -52,6 +52,10 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+void set_pins(void);
+void adas1000_write_register (uint8_t reg, uint32_t value);
+void adas1000_read_register (uint8_t reg);
+
 int main(void) {
 	int i;
 	systemInit();
@@ -74,43 +78,24 @@ int main(void) {
 
 
 	// Write to CMREFCTL
-	ssp0Select();
-	request[0] = 0x85; request[1] = 0xE0; request[2]=0x00; request[3]=0x0B;
-	sspSend(0, (uint8_t *)&request, 4);
-	ssp0Deselect();
-
+	adas1000_write_register (0x05, 0xE0000B);
 
 	// Write to FRMCTL
-	ssp0Select();
-	request[0] = 0x8A; request[1] = 0x07; request[2]=0x92/*0x96*/; request[3]=0x00;
-	sspSend(0, (uint8_t *)&request, 4);
-	ssp0Deselect();
-
-
-
+	adas1000_write_register (0x0A, 0x079200);
 
 	// Write to ECGCTL
-	ssp0Select();
-	request[0] = 0x81; request[1] = 0xF8; request[2]=0x04; request[3]=0xAE;
-	sspSend(0, (uint8_t *)&request, 4);
-	ssp0Deselect();
-
-
+	adas1000_write_register (0x01, 0xF804AE);
 
 	// Write to GPIOCTL
 	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
+	adas1000_write_register (0x06, 0x000004);
+
+	// Write to FRAMES
 	ssp0Select();
-	request[0] = 0x86; request[1] = 0x00; request[2]=0x00; request[3]=0x04;
+	request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
 	sspSend(0, (uint8_t *)&request, 4);
 	ssp0Deselect();
-
-
-		// Write to FRAMES
-		ssp0Select();
-		request[0] = 0x40; request[1] = 0x00; request[2]=0x00; request[3]=0x00;
-		sspSend(0, (uint8_t *)&request, 4);
-		ssp0Deselect();
-
+	//adas1000_write_register (0x40, 0x000000);
 
 		for (i = 0; i < 10; i++) {
 			ssp0Select();
@@ -133,6 +118,19 @@ int main(void) {
 
 
  	 return 0;
+}
+
+void adas1000_write_register (uint8_t reg, uint32_t value) {
+
+	uint8_t request[4];
+	request[0] = 0x80 | (reg & 0x7f);
+	request[1] = (value >> 16)&0xff;
+	request[2] = (value >> 8) & 0xff;
+	request[3] = value & 0xff;
+
+	ssp0Select();
+	sspSend(0, (uint8_t *)&request, 4);
+	ssp0Deselect();
 }
 
 void set_pins(void) {
