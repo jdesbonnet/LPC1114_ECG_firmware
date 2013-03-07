@@ -126,7 +126,9 @@ int main(void) {
 		adas1000_register_write (0x01, 0x000000);
 
 
-		// Power down ADAS1000
+		delay();
+
+
 		pmuDeepSleep(30);
 
 	}
