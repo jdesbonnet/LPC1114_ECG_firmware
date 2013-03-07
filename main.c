@@ -54,6 +54,7 @@
 
 void delay(void);
 void set_pins(void);
+void adas1000_init(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
 uint32_t reverse_byte_order (uint32_t in);
@@ -74,31 +75,10 @@ int main(void) {
 
 
 
-
-
-
   	while (1) {
 
-	// Let's try to read something!
-
-	//printf ("OPSTAT (on start)= %x\r\n" , adas1000_register_read(0x1f));
-
-	// Write to CMREFCTL
-	adas1000_register_write (0x05, 0xE0000B);
-
-	// Write to FRMCTL
-	adas1000_register_write (0x0A, 0x079200);
-
-	// Write to ECGCTL
-	adas1000_register_write (0x01, 0xF804AE);
-
-	// Write to GPIOCTL
-	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
-	adas1000_register_write (0x06, 0x000004);
-
-
-	delay();
-
+		adas1000_init();
+		delay();
 /*
 	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
 	printf ("CMREFCTL= %x\r\n" , adas1000_register_read(0x05));
@@ -108,34 +88,39 @@ int main(void) {
 	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
 */
 
-	// This starts the data...
-	adas1000_register_read (0x40);
+		// This starts the data...
+		adas1000_register_read (0x40);
 
-	delay();
+		delay();
 
 
-	for (j = 0; j<8; j++) {
-		for (i = 0; i < 10; i++) {
-			ssp0Select();
-			// Receive 32 bits
-			//sspReceive (0, (uint8_t *)&response, 4);
-			sspReceive (0, (uint8_t *)&frame[i], 4);
-			ssp0Deselect();
-		}
+		for (j = 0; j<1000; j++) {
+			for (i = 0; i < 10; i++) {
+				ssp0Select();
+				// Receive 32 bits
+				//sspReceive (0, (uint8_t *)&response, 4);
+				sspReceive (0, (uint8_t *)&frame[i], 4);
+				ssp0Deselect();
+			}
 
 	
-		for (i = 0; i < 10; i++) {
-			//printf ("%0x " , reverse_byte_order(frame[i]));
-			//printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
+			for (i = 0; i < 10; i++) {
+				//printf ("%0x " , reverse_byte_order(frame[i]));
+				//printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
+			}
+
+			la = reverse_byte_order(frame[0]&0xffffff);
+			ll = reverse_byte_order(frame[1]&0xffffff);
+			ra = reverse_byte_order(frame[2]&0xffffff);
+			printf ("%d %d", 
+				la-ra, // Lead I
+				reverse_byte_order(frame[5])&0xffffff	// pace
+			); 
+			printf ("\n");
+	
 		}
 
-		la = reverse_byte_order(frame[0]&0xffffff);
-		ll = reverse_byte_order(frame[1]&0xffffff);
-		ra = reverse_byte_order(frame[2]&0xffffff);
-		printf ("%d ", la-ra); 
-		printf ("\n");
-	
-	}
+		pmuDeepSleep(10);
 
 	}
 
@@ -148,6 +133,41 @@ void delay(void) {
 	for (i = 0; i < 1024; i++) {
 		__asm volatile ("NOP");
 	}
+}
+
+void adas1000_init (void) {
+
+	// Write to CMREFCTL Common Mode, Reference and Shield Drive Control Register
+	// Bit [23:19] common mode electrode select. Selecting mean of LA, LL, RA.
+	// Bit [7:4] = 0000 : select RLD_OUT pin for reference drive 
+	// Bit 3 DRVCM = 1 common mode is driven out of the external common-mode pin
+	// Bit 2 EXTEM = 0 use internal common mode
+	// Bit 1 RLDSEL = 1 enable Right-leg drive
+	// Bit 0 SHLDEN = 1 enable shield drive
+	adas1000_register_write (0x05, 0xE0000B);
+
+	// Write to FRMCTL (Frame Control Register)
+	// This determines what's included in the data frame.
+	//
+	adas1000_register_write (0x0A, 0x079200);
+
+	// Write to ECGCTL
+	// Bits [23:19]: all 1 enable all 5 ECG channels
+	// Bit 10: CHCONFIG = 1 differential input (analog lead mode)
+	// Bits [9:8] GAIN = 00 (x1.4)
+	// Bit 7 VREFBUF VREF buffer enable = 1
+	// Bit 6 CLKEXT = 0 Use XTAL
+	// Bit 5 Master = 1
+	// Bit 4 Gang = 0
+	// Bit 3 HP = 1 2MSP high performance / low noise
+	// Bit 2 CNVEN Conversion Enable = 1
+	// Bit 1 PWREN Power Enable = 1
+	// Bit 0 SWRST Reset = 0
+	adas1000_register_write (0x01, 0xF804AE);
+
+	// Write to GPIOCTL
+	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
+	adas1000_register_write (0x06, 0x000004);
 }
 
 void adas1000_register_write (uint8_t reg, uint32_t value) {
