@@ -120,7 +120,14 @@ int main(void) {
 	
 		}
 
-		pmuDeepSleep(10);
+		delay();
+
+		// Power everything off by writing 0x0 into ECGCTL
+		adas1000_register_write (0x01, 0x000000);
+
+
+		// Power down ADAS1000
+		pmuDeepSleep(30);
 
 	}
 
@@ -169,6 +176,7 @@ void adas1000_init (void) {
 	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
 	adas1000_register_write (0x06, 0x000004);
 }
+
 
 void adas1000_register_write (uint8_t reg, uint32_t value) {
 
