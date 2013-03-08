@@ -52,6 +52,8 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+#define ADAS1000
+
 void delay(void);
 void set_pins(void);
 void adas1000_init(void);
@@ -66,31 +68,44 @@ int main(void) {
 	uartInit(115200);
 	set_pins();
 
+#ifdef ASAS1000
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+#endif
+
+
+	// Power everything off by writing 0x0 into ECGCTL
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+	delay();
+	adas1000_register_write (0x01, 0x000000);
+	delay();
+	set_pins();
 
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
 
 	uint32_t frame[12];
 
+	printf ("Starting...\r\n");
+	delay();
 
 
   	while (1) {
 
+		printf ("Sleeping...\r\n");
+		delay();
+
+		set_pins();
+		pmuDeepSleep(30);
+
+
+		printf ("Wake!\r\n");
+		delay();
+
+#ifdef ADAS1000
 		adas1000_init();
 		delay();
-/*
-	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
-	printf ("CMREFCTL= %x\r\n" , adas1000_register_read(0x05));
-	printf ("FRMCTL= %x\r\n" , adas1000_register_read(0x0a));
-	printf ("ECGCTL= %x\r\n" , adas1000_register_read(0x01));	
-	printf ("GPIOCTL= %x\r\n" , adas1000_register_read(0x06));	
-	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
-*/
-
 		// This starts the data...
 		adas1000_register_read (0x40);
-
 		delay();
 
 
@@ -122,14 +137,17 @@ int main(void) {
 
 		delay();
 
+		// Reset
+		adas1000_register_write (0x01, 0x000001);
+		delay();
+
 		// Power everything off by writing 0x0 into ECGCTL
 		adas1000_register_write (0x01, 0x000000);
 
-
 		delay();
 
+#endif
 
-		pmuDeepSleep(30);
 
 	}
 
@@ -179,6 +197,16 @@ void adas1000_init (void) {
 	adas1000_register_write (0x06, 0x000004);
 }
 
+void adas1000_print_diagnostics(void) {
+/*
+	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
+	printf ("CMREFCTL= %x\r\n" , adas1000_register_read(0x05));
+	printf ("FRMCTL= %x\r\n" , adas1000_register_read(0x0a));
+	printf ("ECGCTL= %x\r\n" , adas1000_register_read(0x01));	
+	printf ("GPIOCTL= %x\r\n" , adas1000_register_read(0x06));	
+	printf ("OPSTAT= %x\r\n" , adas1000_register_read(0x1f));
+*/
+}
 
 void adas1000_register_write (uint8_t reg, uint32_t value) {
 
@@ -246,11 +274,11 @@ void set_pins(void) {
 	IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
 	IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
-	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // THIS *SEEMED* MADE ALL THE DIFFERENCE! 4µA
-	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO;
-	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO;
-	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO;
-	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO;
+	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // RXD
+	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // TXD
+	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO; // MISO
+	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO; // MOSI
+	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO; // SCK
 	IOCON_PIO1_11 = IOCON_PIO1_11_FUNC_GPIO;
 
 	for (i = 0; i < 10; i++) {
