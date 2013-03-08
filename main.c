@@ -50,10 +50,16 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+void delay (void);
+
 int main(void) {
 	int i;
 	systemInit();
 	uartInit(115200);
+
+	printf ("Starting...\r\n");
+
+	delay();
 
 	int j = 0;
   	while (1) {
@@ -63,6 +69,8 @@ int main(void) {
 		set_pins();
  		pmuDeepSleep(100);
 		printf ("Hello %d\r\n",j);
+
+		delay();
 
 		//pmuPowerDown();
 
@@ -84,6 +92,13 @@ int main(void) {
 	}
 
  	 return 0;
+}
+
+void delay (void) {
+	int i;
+	for (i = 0; i < 1024; i++) {
+		__asm volatile ("NOP");
+	}
 }
 
 void set_pins(void) {
