@@ -94,12 +94,17 @@ int main(void) {
 		printf ("Sleeping...\r\n");
 		delay();
 
+		// Seems very important to setup pins before sleep. Sleeping after
+		// SPI pin setup does not result in low power sleep.
 		set_pins();
 		pmuDeepSleep(30);
 
 
 		printf ("Wake!\r\n");
 		delay();
+
+
+		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
 #ifdef ADAS1000
 		adas1000_init();
