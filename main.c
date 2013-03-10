@@ -53,6 +53,7 @@
 #define OUTPUT (1)
 
 #define ADAS1000
+//#define OUTPUT_DATA
 
 void delay(void);
 void set_pins(void);
@@ -83,7 +84,7 @@ int main(void) {
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
 
-	uint32_t frame[12];
+	uint32_t frame[16];
 
 	printf ("Starting...\r\n");
 	delay();
@@ -97,46 +98,66 @@ int main(void) {
 		// Seems very important to setup pins before sleep. Sleeping after
 		// SPI pin setup does not result in low power sleep.
 		set_pins();
-		pmuDeepSleep(30);
+
+		pmuDeepSleep(1);
 
 
 		printf ("Wake!\r\n");
 		delay();
 
 
+		// Using PIO1_8 to enable power to ASAS1000
+		//gpioSetValue (1,8,1);
+
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+
+		// Poll for /DRDY on PIO0_11
+		gpioSetDir (0,11,INPUT);
 
 #ifdef ADAS1000
 		adas1000_init();
-		delay();
+
 		// This starts the data...
 		adas1000_register_read (0x40);
-		delay();
 
 
-		for (j = 0; j<1000; j++) {
-			for (i = 0; i < 10; i++) {
-				ssp0Select();
+		for (j = 0; j<10000; j++) {
+
+			// Wait for DRDY
+			gpioSetValue(1,8,1);
+			while (gpioGetValue(0,11) == 1) ;
+			gpioSetValue(1,8,0);
+
+			ssp0Select();
+			for (i = 0; i < 3; i++) {
 				// Receive 32 bits
 				//sspReceive (0, (uint8_t *)&response, 4);
 				sspReceive (0, (uint8_t *)&frame[i], 4);
-				ssp0Deselect();
 			}
+			ssp0Deselect();
 
+			#ifdef OUTPUT_DATA
 	
-			for (i = 0; i < 10; i++) {
-				//printf ("%0x " , reverse_byte_order(frame[i]));
-				//printf ("%d " , reverse_byte_order(frame[i]&0xffffff)-290000000 );
-			}
-
 			la = reverse_byte_order(frame[0]&0xffffff);
 			ll = reverse_byte_order(frame[1]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
+
+			for (i = 0; i < 3; i++) {
+				printf ("%0x " , reverse_byte_order(frame[i]));
+			}
+			printf ("\n");
+
+/*
 			printf ("%d %d", 
 				la-ra, // Lead I
 				reverse_byte_order(frame[5])&0xffffff	// pace
 			); 
-			printf ("\n");
+*/
+
+
+			#endif
+
+
 	
 		}
 
@@ -150,6 +171,8 @@ int main(void) {
 		adas1000_register_write (0x01, 0x000000);
 
 		delay();
+
+		//gpioSetValue (1,8,0);
 
 #endif
 
@@ -181,7 +204,31 @@ void adas1000_init (void) {
 	// Write to FRMCTL (Frame Control Register)
 	// This determines what's included in the data frame.
 	//
-	adas1000_register_write (0x0A, 0x079200);
+	#define LEAD1_LA_DIS (1<<23)
+	#define LEAD2_LL_DIS (1<<22)
+	#define LEAD3_RA_DIS (1<<21)
+	#define V1_DIS (1<<20)
+	#define V2_DIS (1<<19)
+	#define PACE_DIS (1<<14)
+	#define RESPM_DIS (1<<13)
+	#define RESPPH_DIS (1<<12)
+	#define LOFF_DIS (1<<11)
+	#define GPIO_DIS (1<<10)
+	#define CRC_DIS (1<<9)
+	#define A_DIS (1<<7)
+	#define RDYRPT (1<<6)
+	#define DATAFMT (1<<4)
+	//adas1000_register_write (0x0A, 0x079200); // 0000 0111 1001 0010 0000 0000
+	//adas1000_register_write (0x0A, 0x1FB600); // 0001 1111 1011 0110 0000 0000
+	adas1000_register_write (0x0A,
+		LEAD2_LL_DIS | LEAD3_RA_DIS | V1_DIS | V2_DIS 
+		| PACE_DIS | RESPM_DIS | RESPPH_DIS 
+		| GPIO_DIS | CRC_DIS
+	);
+
+	// Write to GPIOCTL
+	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
+	//adas1000_register_write (0x06, 0x000004);
 
 	// Write to ECGCTL
 	// Bits [23:19]: all 1 enable all 5 ECG channels
@@ -197,9 +244,6 @@ void adas1000_init (void) {
 	// Bit 0 SWRST Reset = 0
 	adas1000_register_write (0x01, 0xF804AE);
 
-	// Write to GPIOCTL
-	// Configure GPIO0 as input 0b00000000 00000000 0000[01]00
-	adas1000_register_write (0x06, 0x000004);
 }
 
 void adas1000_print_diagnostics(void) {
@@ -271,8 +315,8 @@ void set_pins(void) {
 	IOCON_PIO0_7 = IOCON_PIO0_7_FUNC_GPIO; // pin 28
 	IOCON_PIO0_8 = IOCON_PIO0_8_FUNC_GPIO; // pin 1
 	IOCON_PIO0_9 = IOCON_PIO0_9_FUNC_GPIO; // pin 2
-	IOCON_JTAG_TCK_PIO0_10 = IOCON_JTAG_TCK_PIO0_10_FUNC_GPIO;
-	IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO; 
+	IOCON_JTAG_TCK_PIO0_10 = IOCON_JTAG_TCK_PIO0_10_FUNC_GPIO; // pin 3
+	IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO; // pin 4
 	IOCON_JTAG_TMS_PIO1_0 = IOCON_JTAG_TMS_PIO1_0_FUNC_GPIO;	
 	IOCON_JTAG_TDO_PIO1_1 = IOCON_JTAG_TDO_PIO1_1_FUNC_GPIO;
 	IOCON_JTAG_nTRST_PIO1_2 = IOCON_JTAG_nTRST_PIO1_2_FUNC_GPIO; // causes extra 150µA drain?!
@@ -281,9 +325,9 @@ void set_pins(void) {
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
 	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // RXD
 	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // TXD
-	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO; // MISO
-	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO; // MOSI
-	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO; // SCK
+	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO; 
+	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO; 
+	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO; 
 	IOCON_PIO1_11 = IOCON_PIO1_11_FUNC_GPIO;
 
 	for (i = 0; i < 10; i++) {
