@@ -54,6 +54,7 @@
 
 #define ADAS1000
 #define OUTPUT_DATA
+#define NDATA 800
 
 void delay(void);
 void set_pins(void);
@@ -65,9 +66,11 @@ uint32_t reverse_byte_order (uint32_t in);
 int main(void) {
 	uint32_t i,j;
 	uint32_t la,ra,ll;
+	uint32_t data[NDATA];
+
 	systemInit();
 	uartInit(115200);
-	//uartInit(230400);
+	//uartInit(230400); // doesn't seem to work
 
 	set_pins();
 
@@ -129,7 +132,11 @@ int main(void) {
 		adas1000_register_read (0x40);
 
 
-		for (j = 0; j<10000; j++) {
+		for (j = 0; j < NDATA; j++) {
+			data[j] = 0;
+		}
+
+		for (j = 0; j < NDATA*8; j++) {
 
 			// Wait for /DRDY
 			gpioSetValue(1,8,1);
@@ -166,18 +173,16 @@ int main(void) {
 				//printf ("%0x " , reverse_byte_order(frame[i]));
 			}
 			//printf ("\n");
-
-			printf ("%x\n", 
-				((la-ra)>>8)&0xffff // Lead I
-			); 
+	
+			data[j/8] += (la-ra)>>8;
 
 			#endif
 
-
-	
+		}
+		for (j = 0; j < NDATA; j++) {
+			printf ("%d\n", data[j]/8);
 		}
 
-		delay();
 
 		// Reset
 		adas1000_register_write (0x01, 0x000001);
