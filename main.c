@@ -111,7 +111,8 @@ int main(void) {
 
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
-		// Poll for /DRDY on PIO0_11
+		// Poll for /DRDY on PIO0_11 (pin 4)
+		IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
 		gpioSetDir (0,11,INPUT);
 
 #ifdef ADAS1000
@@ -125,7 +126,8 @@ int main(void) {
 
 			// Wait for DRDY
 			gpioSetValue(1,8,1);
-			while (gpioGetValue(0,11) == 1) ;
+			//printf ("%d" , gpioGetValue(0,11));
+			while (gpioGetValue(0,11) != 0) printf ("(%d)" , gpioGetValue(0,11));
 			gpioSetValue(1,8,0);
 
 			ssp0Select();
@@ -171,8 +173,6 @@ int main(void) {
 		adas1000_register_write (0x01, 0x000000);
 
 		delay();
-
-		//gpioSetValue (1,8,0);
 
 #endif
 
@@ -331,15 +331,15 @@ void set_pins(void) {
 	IOCON_PIO1_11 = IOCON_PIO1_11_FUNC_GPIO;
 
 	for (i = 0; i < 10; i++) {
-		gpioSetDir (0,i,1); // 1 = output
+		gpioSetDir (0,i,OUTPUT); // 1 = output
 		gpioSetValue (0,i,1); // this seems to make no difference
 	}
 	for (i = 0; i < 7; i++) {
-		gpioSetDir (1,i,1); // 1 = output
+		gpioSetDir (1,i,OUTPUT); // 1 = output
 		gpioSetValue (1,i,1); // this seems to make no difference
 	}
 	for (i = 9; i < 12; i++) {
-		gpioSetDir (1,i,1); // 1 = output
+		gpioSetDir (1,i,OUTPUT); // 1 = output
 		gpioSetValue (1,i,1); // this seems to make no difference
 	}
 
