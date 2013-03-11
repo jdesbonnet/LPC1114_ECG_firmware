@@ -53,7 +53,7 @@
 #define OUTPUT (1)
 
 #define ADAS1000
-//#define OUTPUT_DATA
+#define OUTPUT_DATA
 
 void delay(void);
 void set_pins(void);
@@ -67,6 +67,8 @@ int main(void) {
 	uint32_t la,ra,ll;
 	systemInit();
 	uartInit(115200);
+	//uartInit(230400);
+
 	set_pins();
 
 #ifdef ASAS1000
@@ -150,26 +152,25 @@ int main(void) {
 			} while ( (i&0x80) == 0);
 
 
-			for (i = 1; i < 3; i++) {
+			for (i = 1; i < 4; i++) {
 				sspReceive (0, (uint8_t *)&frame[i], 4);
 			}
 
 			ssp0Deselect();
 
 			#ifdef OUTPUT_DATA
-			la = reverse_byte_order(frame[0]&0xffffff);
-			ll = reverse_byte_order(frame[1]&0xffffff);
+			la = reverse_byte_order(frame[1]&0xffffff);
+			//ll = reverse_byte_order(frame[3]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
-			for (i = 0; i < 3; i++) {
-				printf ("%0x " , reverse_byte_order(frame[i]));
+			for (i = 0; i < 4; i++) {
+				//printf ("%0x " , reverse_byte_order(frame[i]));
 			}
-			printf ("\n");
-/*
-			printf ("%d %d", 
-				la-ra, // Lead I
-				reverse_byte_order(frame[5])&0xffffff	// pace
+			//printf ("\n");
+
+			printf ("%x\n", 
+				((la-ra)>>8)&0xffff // Lead I
 			); 
-*/
+
 			#endif
 
 
@@ -234,7 +235,7 @@ void adas1000_init (void) {
 	//adas1000_register_write (0x0A, 0x079200); // 0000 0111 1001 0010 0000 0000
 	//adas1000_register_write (0x0A, 0x1FB600); // 0001 1111 1011 0110 0000 0000
 	adas1000_register_write (0x0A,
-		LEAD2_LL_DIS | LEAD3_RA_DIS | V1_DIS | V2_DIS 
+		 LEAD3_RA_DIS | V1_DIS | V2_DIS 
 		| PACE_DIS | RESPM_DIS | RESPPH_DIS 
 		| GPIO_DIS | CRC_DIS
 	);
