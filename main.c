@@ -113,7 +113,12 @@ int main(void) {
 
 		// Poll for /DRDY on PIO0_11 (pin 4)
 		IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
-		gpioSetDir (0,11,INPUT);
+		GPIO_GPIO0DIR &= ~(1<<11);
+		//gpioSetDir (0,11,INPUT);
+
+		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO; // pin 5
+		GPIO_GPIO0DIR &= ~(1<<5);
+
 
 #ifdef ADAS1000
 		adas1000_init();
@@ -127,7 +132,8 @@ int main(void) {
 			// Wait for DRDY
 			gpioSetValue(1,8,1);
 			//printf ("%d" , gpioGetValue(0,11));
-			while (gpioGetValue(0,11) != 0) printf ("(%d)" , gpioGetValue(0,11));
+			//printf ("%x\n", GPIO_GPIO0DATA);
+			while (gpioGetValue(0,5) != 0) ;
 			gpioSetValue(1,8,0);
 
 			ssp0Select();
