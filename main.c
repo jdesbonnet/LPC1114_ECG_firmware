@@ -56,17 +56,36 @@
 #define OUTPUT_DATA
 #define NDATA 800
 
+
+// ECG data frame
+typedef struct  {
+	uint16_t lead1;
+} ecg_record_t;
+
+typedef struct  {
+	uint32_t header;
+	uint32_t la;
+	uint32_t ra;
+	uint32_t ll;
+} ecg_data_t;
+
+
 void delay(void);
 void set_pins(void);
 void adas1000_init(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
 uint32_t reverse_byte_order (uint32_t in);
+void adas1000_frame_read (ecg_data_t *ecg_data);
+
+
 
 int main(void) {
 	uint32_t i,j;
-	uint32_t la,ra,ll;
-	uint32_t data[NDATA];
+	uint32_t ra_mean, la_mean;
+	uint32_t lead1,lead1_mean,lead1_min,lead1_max;
+	ecg_data_t ecg_data;
+	int32_t data[NDATA];
 
 	systemInit();
 	uartInit(115200);
@@ -86,19 +105,18 @@ int main(void) {
 	delay();
 	set_pins();
 
-	uint8_t request[SSP_FIFOSIZE];
-	uint8_t response[SSP_FIFOSIZE];
-
-	uint32_t frame[16];
-
-	printf ("Starting...\r\n");
+	printf ("Starting...\n");
 	delay();
 
 
   	while (1) {
 
-		printf ("Sleeping...\r\n");
-		delay();
+		//printf ("Sleeping...\n");
+		
+		for (i = 0; i < 256; i++) {
+			delay();
+		}
+
 
 		// Seems very important to setup pins before sleep. Sleeping after
 		// SPI pin setup does not result in low power sleep.
@@ -106,9 +124,12 @@ int main(void) {
 
 		pmuDeepSleep(1);
 
+		for (i = 0; i < 256; i++) {
+			delay();
+		}
+		
+		//printf ("Wake!\n");
 
-		printf ("Wake!\r\n");
-		delay();
 
 
 		// Using PIO1_8 to enable power to ASAS1000
@@ -116,11 +137,7 @@ int main(void) {
 
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
-		// Poll for /DRDY on PIO0_11 (pin 4). Does not work.
-		//IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
-		//GPIO_GPIO0DIR &= ~(1<<11);
-
-		// Poll for /DRDY on PIO0_5 (pin 5). Works!
+		// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
 		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
 		GPIO_GPIO0DIR &= ~(1<<5);
 
@@ -128,59 +145,49 @@ int main(void) {
 #ifdef ADAS1000
 		adas1000_init();
 
-		// This starts the data...
-		adas1000_register_read (0x40);
-
-
 		for (j = 0; j < NDATA; j++) {
 			data[j] = 0;
 		}
 
-		for (j = 0; j < NDATA*8; j++) {
+		// This starts the data...
+		adas1000_register_read (0x40);
 
-			// Wait for /DRDY
-			gpioSetValue(1,8,1);
-			//printf ("%d" , gpioGetValue(0,11));
-			//printf ("%x\n", GPIO_GPIO0DATA);
-			while (gpioGetValue(0,5) != 0) ;
-			gpioSetValue(1,8,0);
-
-			// Data is available
-
-			ssp0Select();
-
-			// Skip to frame header
-			do {
-				sspReceive (0, (uint8_t *)&frame[0], 4);
-				i = frame[0] &0xff;
-				if (i & 0x80 == 0) {
-					printf ("*", i);
-				}
-			} while ( (i&0x80) == 0);
-
-
-			for (i = 1; i < 4; i++) {
-				sspReceive (0, (uint8_t *)&frame[i], 4);
+		// Get mean of la, ra
+		ra_mean=0;
+		la_mean=0;
+		lead1_mean = 0;
+		lead1_max = 0;
+		lead1_min = ~ 0;
+		for (j = 0; j < 64; j++) {
+			adas1000_frame_read (&ecg_data);
+			lead1 = ecg_data.la - ecg_data.ra;
+			lead1_mean += lead1;
+			if (lead1 < lead1_min) {
+				lead1_min = lead1;
+			}
+			if (lead1 > lead1_max) {
+				lead1_max = lead1;
 			}
 
-			ssp0Deselect();
-
-			#ifdef OUTPUT_DATA
-			la = reverse_byte_order(frame[1]&0xffffff);
-			//ll = reverse_byte_order(frame[3]&0xffffff);
-			ra = reverse_byte_order(frame[2]&0xffffff);
-			for (i = 0; i < 4; i++) {
-				//printf ("%0x " , reverse_byte_order(frame[i]));
-			}
-			//printf ("\n");
-	
-			data[j/8] += (la-ra)>>8;
-
-			#endif
-
+			ra_mean += ecg_data.ra;
+			la_mean += ecg_data.la;
 		}
+		lead1_mean/=64;
+		ra_mean/=64;
+		la_mean/=64;
+
+		//printf ("lead1_mean=%x lead1_min=%x lead1_max=%x\n",lead1_mean,lead1_min,lead1_max);
+
+		for (j = 0; j < NDATA*2; j++) {
+			adas1000_frame_read (&ecg_data);
+			lead1 = ecg_data.la - ecg_data.ra;
+			data[j/2] += (lead1-lead1_mean);
+		}
+
 		for (j = 0; j < NDATA; j++) {
-			printf ("%d\n", data[j]/8);
+			//printf ("%d %d\n", j, (data[j]*1024)/(lead1_max-lead1_min) );
+			printf ("%d\n",(data[j]/2) );
+
 		}
 
 
@@ -207,6 +214,37 @@ void delay(void) {
 	for (i = 0; i < 1024; i++) {
 		__asm volatile ("NOP");
 	}
+}
+
+void adas1000_frame_read (ecg_data_t *ecg_data) {
+
+	int i;
+	uint32_t frame[5];
+
+	// Wait for /DRDY
+	while (gpioGetValue(0,5) != 0) ;
+
+	// Data is available
+	ssp0Select();
+
+	// Skip to frame header
+	do {
+		sspReceive (0, (uint8_t *)&frame[0], 4);
+		i = frame[0] &0xff;
+		if ( (i & 0x80) == 0) {
+			printf ("*", i);
+		}
+	} while ( (i&0x80) == 0);
+
+
+	for (i = 1; i < 4; i++) {
+		sspReceive (0, (uint8_t *)&frame[i], 4);
+	}
+
+	ssp0Deselect();
+
+	ecg_data->header = reverse_byte_order(frame[0]);
+	ecg_data->la = reverse_byte_order(frame[1])&0xffffff;
 }
 
 void adas1000_init (void) {
@@ -292,7 +330,7 @@ void adas1000_register_write (uint8_t reg, uint32_t value) {
 uint32_t adas1000_register_read (uint8_t reg) {
 	uint8_t request[4];
 	//uint8_t response[4];
-	uint32_t response, ret;
+	uint32_t response;
 	ssp0Select();
 	request[0] = reg & 0x7F;
 	sspSend(0, (uint8_t *)&request, 4);
