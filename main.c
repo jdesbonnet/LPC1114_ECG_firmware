@@ -63,7 +63,7 @@ uint32_t adas1000_register_read (uint8_t reg);
 uint32_t reverse_byte_order (uint32_t in);
 
 int main(void) {
-	int i,j;
+	uint32_t i,j;
 	uint32_t la,ra,ll;
 	systemInit();
 	uartInit(115200);
@@ -111,12 +111,12 @@ int main(void) {
 
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
-		// Poll for /DRDY on PIO0_11 (pin 4)
-		IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
-		GPIO_GPIO0DIR &= ~(1<<11);
-		//gpioSetDir (0,11,INPUT);
+		// Poll for /DRDY on PIO0_11 (pin 4). Does not work.
+		//IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
+		//GPIO_GPIO0DIR &= ~(1<<11);
 
-		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO; // pin 5
+		// Poll for /DRDY on PIO0_5 (pin 5). Works!
+		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
 		GPIO_GPIO0DIR &= ~(1<<5);
 
 
@@ -129,40 +129,47 @@ int main(void) {
 
 		for (j = 0; j<10000; j++) {
 
-			// Wait for DRDY
+			// Wait for /DRDY
 			gpioSetValue(1,8,1);
 			//printf ("%d" , gpioGetValue(0,11));
 			//printf ("%x\n", GPIO_GPIO0DATA);
 			while (gpioGetValue(0,5) != 0) ;
 			gpioSetValue(1,8,0);
 
+			// Data is available
+
 			ssp0Select();
-			for (i = 0; i < 3; i++) {
-				// Receive 32 bits
-				//sspReceive (0, (uint8_t *)&response, 4);
+
+			// Skip to frame header
+			do {
+				sspReceive (0, (uint8_t *)&frame[0], 4);
+				i = frame[0] &0xff;
+				if (i & 0x80 == 0) {
+					printf ("*", i);
+				}
+			} while ( (i&0x80) == 0);
+
+
+			for (i = 1; i < 3; i++) {
 				sspReceive (0, (uint8_t *)&frame[i], 4);
 			}
+
 			ssp0Deselect();
 
 			#ifdef OUTPUT_DATA
-	
 			la = reverse_byte_order(frame[0]&0xffffff);
 			ll = reverse_byte_order(frame[1]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
-
 			for (i = 0; i < 3; i++) {
 				printf ("%0x " , reverse_byte_order(frame[i]));
 			}
 			printf ("\n");
-
 /*
 			printf ("%d %d", 
 				la-ra, // Lead I
 				reverse_byte_order(frame[5])&0xffffff	// pace
 			); 
 */
-
-
 			#endif
 
 
