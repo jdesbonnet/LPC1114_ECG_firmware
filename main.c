@@ -55,7 +55,7 @@
 #define ADAS1000
 #define OUTPUT_DATA
 #define NDATA 800
-
+//#define SLEEP_EN
 
 // ECG data frame
 typedef struct  {
@@ -89,28 +89,27 @@ int main(void) {
 
 	systemInit();
 	uartInit(115200);
-	//uartInit(230400); // doesn't seem to work
 
 	set_pins();
-
-#ifdef ASAS1000
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-#endif
 
-
-	// Power everything off by writing 0x0 into ECGCTL
-	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-	delay();
-	adas1000_register_write (0x01, 0x000000);
-	delay();
-	set_pins();
+	// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
+	IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
+	GPIO_GPIO0DIR &= ~(1<<5);
 
 	printf ("Starting...\n");
-	delay();
+
+	#ifndef SLEEP_EN
+	adas1000_init();
+	#endif
+
+	//delay();
 
 
   	while (1) {
 
+
+		#ifdef SLEEP_EN
 		//printf ("Sleeping...\n");
 		
 		for (i = 0; i < 256; i++) {
@@ -130,20 +129,15 @@ int main(void) {
 		
 		//printf ("Wake!\n");
 
-
-
-		// Using PIO1_8 to enable power to ASAS1000
-		//gpioSetValue (1,8,1);
-
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
 		// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
 		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
 		GPIO_GPIO0DIR &= ~(1<<5);
 
-
-#ifdef ADAS1000
 		adas1000_init();
+		#endif
+
 
 		for (j = 0; j < NDATA; j++) {
 			data[j] = 0;
@@ -179,29 +173,27 @@ int main(void) {
 		//printf ("lead1_mean=%x lead1_min=%x lead1_max=%x\n",lead1_mean,lead1_min,lead1_max);
 
 		for (j = 0; j < NDATA*2; j++) {
+		//while(1){
 			adas1000_frame_read (&ecg_data);
 			lead1 = ecg_data.la - ecg_data.ra;
 			data[j/2] += (lead1-lead1_mean);
+			//printf ("%x\n" , (lead1&0xfff) );
 		}
 
+
+		
 		for (j = 0; j < NDATA; j++) {
 			//printf ("%d %d\n", j, (data[j]*1024)/(lead1_max-lead1_min) );
 			printf ("%d\n",(data[j]/2) );
-
 		}
+		
 
 
-		// Reset
-		adas1000_register_write (0x01, 0x000001);
-		delay();
-
+		#ifdef SLEEP_EN
 		// Power everything off by writing 0x0 into ECGCTL
 		adas1000_register_write (0x01, 0x000000);
-
 		delay();
-
-#endif
-
+		#endif
 
 	}
 
