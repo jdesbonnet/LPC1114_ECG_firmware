@@ -164,7 +164,9 @@ int main(void) {
 			la = reverse_byte_order(frame[1]&0xffffff);
 			//ll = reverse_byte_order(frame[3]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
-			for (i = 0; i < 3; i++) {
+
+			printf ("%0x ", frame[0] & 0xff);
+			for (i = 1; i < 3; i++) {
 				printf ("%0x " , reverse_byte_order(frame[i]));
 			}
 			printf ("\n");
