@@ -54,21 +54,6 @@
 
 #define ADAS1000
 #define OUTPUT_DATA
-#define NDATA 800
-//#define SLEEP_EN
-
-// ECG data frame
-typedef struct  {
-	uint16_t lead1;
-} ecg_record_t;
-
-typedef struct  {
-	uint32_t header;
-	uint32_t la;
-	uint32_t ra;
-	uint32_t ll;
-} ecg_data_t;
-
 
 void delay(void);
 void set_pins(void);
@@ -76,78 +61,137 @@ void adas1000_init(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
 uint32_t reverse_byte_order (uint32_t in);
-void adas1000_frame_read (ecg_data_t *ecg_data);
-void adas1000_testtone_enable(void);
-
 
 int main(void) {
 	uint32_t i,j;
-	uint32_t ra_mean, la_mean;
-	uint32_t lead1,lead1_mean,lead1_min,lead1_max;
-	ecg_data_t ecg_data;
-	//int32_t data[NDATA];
-
+	uint32_t la,ra,ll;
 	systemInit();
 	uartInit(115200);
+	//uartInit(230400);
 
 	set_pins();
+
+#ifdef ASAS1000
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+#endif
 
-	// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
-	IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
-	GPIO_GPIO0DIR &= ~(1<<5);
 
-	printf ("Starting...\n");
+	// Power everything off by writing 0x0 into ECGCTL
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+	delay();
+	adas1000_register_write (0x01, 0x000000);
+	delay();
+	set_pins();
 
-	#ifndef SLEEP_EN
-	adas1000_init();
-	adas1000_testtone_enable();
-	// This starts the data...
-	adas1000_register_read (0x40);
-	#endif
+	uint8_t request[SSP_FIFOSIZE];
+	uint8_t response[SSP_FIFOSIZE];
+
+	uint32_t frame[16];
+
+	printf ("Starting...\r\n");
+	delay();
 
 
   	while (1) {
 
+		printf ("Sleeping...\r\n");
+		delay();
 
-		#ifdef SLEEP_EN
-		//printf ("Sleeping...\n");		
-		for (i = 0; i < 256; i++) {
-			delay();
-		}
 		// Seems very important to setup pins before sleep. Sleeping after
 		// SPI pin setup does not result in low power sleep.
 		set_pins();
+
 		pmuDeepSleep(1);
-		for (i = 0; i < 256; i++) {
-			delay();
-		}
-		//printf ("Wake!\n");
+
+
+		printf ("Wake!\r\n");
+		delay();
+
+
+		// Using PIO1_8 to enable power to ASAS1000
+		//gpioSetValue (1,8,1);
+
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-		// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
+
+		// Poll for /DRDY on PIO0_11 (pin 4). Does not work.
+		//IOCON_JTAG_TDI_PIO0_11 = IOCON_JTAG_TDI_PIO0_11_FUNC_GPIO;
+		//GPIO_GPIO0DIR &= ~(1<<11);
+
+		// Poll for /DRDY on PIO0_5 (pin 5). Works!
 		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
 		GPIO_GPIO0DIR &= ~(1<<5);
+
+
+#ifdef ADAS1000
 		adas1000_init();
+
+		adas1000_testtone_enable();
+
 		// This starts the data...
 		adas1000_register_read (0x40);
-		#endif
 
 
-		for (j = 0; j < 10000; j++) {
-			adas1000_frame_read (&ecg_data);
-			//lead1 = ecg_data.la - ecg_data.ra;
-			lead1 = ecg_data.la;
-			lead1>>=4;
-			uartSendByte (((lead1>>7)|0x80)&0xff);
-			uartSendByte (lead1&0x7f);
+		for (j = 0; j<10000; j++) {
+
+			// Wait for /DRDY
+			gpioSetValue(1,8,1);
+			//printf ("%d" , gpioGetValue(0,11));
+			//printf ("%x\n", GPIO_GPIO0DATA);
+			while (gpioGetValue(0,5) != 0) ;
+			gpioSetValue(1,8,0);
+
+			// Data is available
+
+			ssp0Select();
+
+			// Skip to frame header
+			do {
+				sspReceive (0, (uint8_t *)&frame[0], 4);
+				i = frame[0] &0xff;
+				if (i & 0x80 == 0) {
+					printf ("*", i);
+				}
+			} while ( (i&0x80) == 0);
+
+
+			for (i = 1; i < 4; i++) {
+				sspReceive (0, (uint8_t *)&frame[i], 4);
+			}
+
+			ssp0Deselect();
+
+			#ifdef OUTPUT_DATA
+			la = reverse_byte_order(frame[1]&0xffffff);
+			//ll = reverse_byte_order(frame[3]&0xffffff);
+			ra = reverse_byte_order(frame[2]&0xffffff);
+			for (i = 0; i < 3; i++) {
+				printf ("%0x " , reverse_byte_order(frame[i]));
+			}
+			printf ("\n");
+
+			//printf ("%x\n", 
+			//	((la-ra)>>8)&0xffff // Lead I
+			//); 
+
+			#endif
+
+
+	
 		}
 
+		delay();
 
-		#ifdef SLEEP_EN
+		// Reset
+		adas1000_register_write (0x01, 0x000001);
+		delay();
+
 		// Power everything off by writing 0x0 into ECGCTL
 		adas1000_register_write (0x01, 0x000000);
+
 		delay();
-		#endif
+
+#endif
+
 
 	}
 
@@ -162,47 +206,6 @@ void delay(void) {
 	}
 }
 
-void adas1000_frame_read (ecg_data_t *ecg_data) {
-
-	int i;
-	uint32_t frame[5];
-
-	// Wait for /DRDY
-	while (gpioGetValue(0,5) != 0) ;
-
-	// Data is available because /DRDY=0
-
-	// /CS=0 Start SPI read
-	ssp0Select();
-
-	// Skip to frame header if it's not the first byte
-	do {
-		sspReceive (0, (uint8_t *)&frame[0], 4);
-		i = frame[0] &0xff;
-		if ( (i & 0x80) == 0) {
-			printf ("*", i);
-		}
-	} while ( (i&0x80) == 0);
-
-
-	for (i = 1; i < 5; i++) {
-		sspReceive (0, (uint8_t *)&frame[i], 4);
-	}
-
-	// /CS=1 (end of SPI read)
-	ssp0Deselect();
-
-	//for (i = 0; i < 5; i++) {
-		//printf ("%x ", frame[i]);
-	//}
-	//printf ("\n");
-
-	ecg_data->header = reverse_byte_order(frame[0]);
-	ecg_data->la = reverse_byte_order(frame[1])&0x00ffffff;
-	ecg_data->ll = reverse_byte_order(frame[2])&0x00ffffff;
-	ecg_data->ra = reverse_byte_order(frame[3])&0x00ffffff;
-}
-
 void adas1000_init (void) {
 
 	// Write to CMREFCTL Common Mode, Reference and Shield Drive Control Register
@@ -213,8 +216,6 @@ void adas1000_init (void) {
 	// Bit 1 RLDSEL = 1 enable Right-leg drive
 	// Bit 0 SHLDEN = 1 enable shield drive
 	adas1000_register_write (0x05, 0xE0000B);
-	//adas1000_register_write (0x05, 0xA0000B); // CMR = mean (LA, RA)
-
 
 	// Write to FRMCTL (Frame Control Register)
 	// This determines what's included in the data frame.
@@ -233,12 +234,17 @@ void adas1000_init (void) {
 	#define A_DIS (1<<7)
 	#define RDYRPT (1<<6)
 	#define DATAFMT (1<<4)
+	#define FRMCTL_SKIP_MASK (0x0000000C) // 0b...0000 1100
+	#define FRMCTL_SKIP_1 (0x00000004)
+	#define FRMCTL_SKIP_3 (0x00000008)
 	//adas1000_register_write (0x0A, 0x079200); // 0000 0111 1001 0010 0000 0000
 	//adas1000_register_write (0x0A, 0x1FB600); // 0001 1111 1011 0110 0000 0000
 	adas1000_register_write (0x0A,
-		 V1_DIS | V2_DIS 
+		 LEAD3_RA_DIS | V1_DIS | V2_DIS 
 		| PACE_DIS | RESPM_DIS | RESPPH_DIS 
 		| GPIO_DIS | CRC_DIS
+		| FRMCTL_SKIP_3  // 1/4 frames: 500Hz rate
+
 	);
 
 	// Write to GPIOCTL
@@ -298,7 +304,7 @@ void adas1000_register_write (uint8_t reg, uint32_t value) {
 uint32_t adas1000_register_read (uint8_t reg) {
 	uint8_t request[4];
 	//uint8_t response[4];
-	uint32_t response;
+	uint32_t response, ret;
 	ssp0Select();
 	request[0] = reg & 0x7F;
 	sspSend(0, (uint8_t *)&request, 4);
