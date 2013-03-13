@@ -77,7 +77,7 @@ void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
 uint32_t reverse_byte_order (uint32_t in);
 void adas1000_frame_read (ecg_data_t *ecg_data);
-
+void adas1000_testtone_enable(void);
 
 
 int main(void) {
@@ -85,7 +85,7 @@ int main(void) {
 	uint32_t ra_mean, la_mean;
 	uint32_t lead1,lead1_mean,lead1_min,lead1_max;
 	ecg_data_t ecg_data;
-	int32_t data[NDATA];
+	//int32_t data[NDATA];
 
 	systemInit();
 	uartInit(115200);
@@ -101,92 +101,46 @@ int main(void) {
 
 	#ifndef SLEEP_EN
 	adas1000_init();
+	adas1000_testtone_enable();
+	// This starts the data...
+	adas1000_register_read (0x40);
 	#endif
-
-	//delay();
 
 
   	while (1) {
 
 
 		#ifdef SLEEP_EN
-		//printf ("Sleeping...\n");
-		
+		//printf ("Sleeping...\n");		
 		for (i = 0; i < 256; i++) {
 			delay();
 		}
-
-
 		// Seems very important to setup pins before sleep. Sleeping after
 		// SPI pin setup does not result in low power sleep.
 		set_pins();
-
 		pmuDeepSleep(1);
-
 		for (i = 0; i < 256; i++) {
 			delay();
 		}
-		
 		//printf ("Wake!\n");
-
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-
 		// Poll for /DRDY on PIO0_5 (pin 5). (PIO0_11 on pin 4 does not work)
 		IOCON_PIO0_5 = IOCON_PIO0_5_FUNC_GPIO;
 		GPIO_GPIO0DIR &= ~(1<<5);
-
 		adas1000_init();
+		// This starts the data...
+		adas1000_register_read (0x40);
 		#endif
 
 
-		for (j = 0; j < NDATA; j++) {
-			data[j] = 0;
-		}
-
-		// This starts the data...
-		adas1000_register_read (0x40);
-
-		// Get mean of la, ra
-		ra_mean=0;
-		la_mean=0;
-		lead1_mean = 0;
-		lead1_max = 0;
-		lead1_min = ~ 0;
-		for (j = 0; j < 64; j++) {
+		for (j = 0; j < 10000; j++) {
 			adas1000_frame_read (&ecg_data);
-			lead1 = ecg_data.la - ecg_data.ra;
-			lead1_mean += lead1;
-			if (lead1 < lead1_min) {
-				lead1_min = lead1;
-			}
-			if (lead1 > lead1_max) {
-				lead1_max = lead1;
-			}
-
-			ra_mean += ecg_data.ra;
-			la_mean += ecg_data.la;
+			//lead1 = ecg_data.la - ecg_data.ra;
+			lead1 = ecg_data.la;
+			lead1>>=4;
+			uartSendByte (((lead1>>7)|0x80)&0xff);
+			uartSendByte (lead1&0x7f);
 		}
-		lead1_mean/=64;
-		ra_mean/=64;
-		la_mean/=64;
-
-		//printf ("lead1_mean=%x lead1_min=%x lead1_max=%x\n",lead1_mean,lead1_min,lead1_max);
-
-		for (j = 0; j < NDATA*2; j++) {
-		//while(1){
-			adas1000_frame_read (&ecg_data);
-			lead1 = ecg_data.la - ecg_data.ra;
-			data[j/2] += (lead1-lead1_mean);
-			//printf ("%x\n" , (lead1&0xfff) );
-		}
-
-
-		
-		for (j = 0; j < NDATA; j++) {
-			//printf ("%d %d\n", j, (data[j]*1024)/(lead1_max-lead1_min) );
-			printf ("%d\n",(data[j]/2) );
-		}
-		
 
 
 		#ifdef SLEEP_EN
@@ -216,10 +170,12 @@ void adas1000_frame_read (ecg_data_t *ecg_data) {
 	// Wait for /DRDY
 	while (gpioGetValue(0,5) != 0) ;
 
-	// Data is available
+	// Data is available because /DRDY=0
+
+	// /CS=0 Start SPI read
 	ssp0Select();
 
-	// Skip to frame header
+	// Skip to frame header if it's not the first byte
 	do {
 		sspReceive (0, (uint8_t *)&frame[0], 4);
 		i = frame[0] &0xff;
@@ -229,14 +185,22 @@ void adas1000_frame_read (ecg_data_t *ecg_data) {
 	} while ( (i&0x80) == 0);
 
 
-	for (i = 1; i < 4; i++) {
+	for (i = 1; i < 5; i++) {
 		sspReceive (0, (uint8_t *)&frame[i], 4);
 	}
 
+	// /CS=1 (end of SPI read)
 	ssp0Deselect();
 
+	//for (i = 0; i < 5; i++) {
+		//printf ("%x ", frame[i]);
+	//}
+	//printf ("\n");
+
 	ecg_data->header = reverse_byte_order(frame[0]);
-	ecg_data->la = reverse_byte_order(frame[1])&0xffffff;
+	ecg_data->la = reverse_byte_order(frame[1])&0x00ffffff;
+	ecg_data->ll = reverse_byte_order(frame[2])&0x00ffffff;
+	ecg_data->ra = reverse_byte_order(frame[3])&0x00ffffff;
 }
 
 void adas1000_init (void) {
@@ -249,6 +213,8 @@ void adas1000_init (void) {
 	// Bit 1 RLDSEL = 1 enable Right-leg drive
 	// Bit 0 SHLDEN = 1 enable shield drive
 	adas1000_register_write (0x05, 0xE0000B);
+	//adas1000_register_write (0x05, 0xA0000B); // CMR = mean (LA, RA)
+
 
 	// Write to FRMCTL (Frame Control Register)
 	// This determines what's included in the data frame.
@@ -270,7 +236,7 @@ void adas1000_init (void) {
 	//adas1000_register_write (0x0A, 0x079200); // 0000 0111 1001 0010 0000 0000
 	//adas1000_register_write (0x0A, 0x1FB600); // 0001 1111 1011 0110 0000 0000
 	adas1000_register_write (0x0A,
-		 LEAD3_RA_DIS | V1_DIS | V2_DIS 
+		 V1_DIS | V2_DIS 
 		| PACE_DIS | RESPM_DIS | RESPPH_DIS 
 		| GPIO_DIS | CRC_DIS
 	);
@@ -293,6 +259,16 @@ void adas1000_init (void) {
 	// Bit 0 SWRST Reset = 0
 	adas1000_register_write (0x01, 0xF804AE);
 
+}
+
+void adas1000_testtone_enable (void) {
+
+	// 10Hz 1mV p-p sine wave to LA
+	adas1000_register_write (0x08, // TESTTONE register
+		(1<<23)  // connect test toneto LA
+		| (1<<2) // TONINT (connect internally)
+		| (1<<0) // TONEN (enable test tone)
+	);
 }
 
 void adas1000_print_diagnostics(void) {
