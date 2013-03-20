@@ -92,6 +92,10 @@ int main(void) {
 #ifdef SRAM_IC
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
+
+
+while(1) {
+
 	// Set byte mode
 	gpioSetValue(0,3,0);
 	request[0] = 0x01;  // WRMR command
@@ -100,12 +104,10 @@ int main(void) {
 	sspSend(0, (uint8_t *)&request, 2);
 	gpioSetValue(0,3,1);
 
-while(1) {
-
 	// Test by writing to memory
 	//printf ("Write to memory\n");
 	gpioSetValue(0,3,0);
-	request[0] = 0x02;  // byte write
+	request[0] = 0x02;  // write command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
@@ -116,7 +118,7 @@ while(1) {
 	// Read it back
 	//printf ("Read back from memory\n");
 	gpioSetValue(0,3,0);
-	request[0] = 0x03;  // byte read
+	request[0] = 0x03;  // read command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
@@ -132,6 +134,49 @@ while(1) {
 		//printf ("FAIL\n");
 	}
 
+	//
+	// Test sequential mode
+	//
+
+	// Set sequential mode
+	gpioSetValue(0,3,0);
+	request[0] = 0x01; // WRMR command
+	request[1] = 0x40; // Sequential mode
+	gpioSetValue(1,8,1);
+	sspSend(0, (uint8_t *)&request, 2);
+	gpioSetValue(0,3,1);
+
+	// Write to memory
+	gpioSetValue(0,3,0);
+	request[0] = 0x02;  // write command
+	request[1] = 0x00;  // addr 0x000000
+	request[2] = 0x00;  //
+	request[3] = 0x00;  //
+	sspSend(0, (uint8_t *)&request, 4);
+	j=0;
+	for (i = 1; i < 1999; i++) {
+		request[0] = i;
+		sspSend(0, (uint8_t *)&request, 1);
+		j += i;
+	}
+	gpioSetValue(0,3,1);
+
+	// Read back	
+	gpioSetValue(0,3,0);
+	request[0] = 0x03;  // read command
+	request[1] = 0x00;  // addr 0x000000
+	request[2] = 0x00;  //
+	request[3] = 0x00;  //
+	sspSend(0, (uint8_t *)&request, 4);
+	for (i = 1; i < 1999; i++) {
+		request[0] = i;
+		sspReceive(0, (uint8_t *)&response, 1);
+		j -= i;
+	}
+	gpioSetValue(0,3,1);
+	if (j!=0) {
+		while (1);
+	}
 
 	delay();
 
