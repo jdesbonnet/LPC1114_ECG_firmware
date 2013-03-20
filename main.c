@@ -94,7 +94,7 @@ int main(void) {
 
   	while (1) {
 
-		printf ("Sleeping...\r\n");
+		//printf ("Sleeping...\r\n");
 		delay();
 
 		// Seems very important to setup pins before sleep. Sleeping after
@@ -104,7 +104,7 @@ int main(void) {
 		pmuDeepSleep(1);
 
 
-		printf ("Wake!\r\n");
+		//printf ("Wake!\r\n");
 		delay();
 
 
@@ -165,15 +165,23 @@ int main(void) {
 			//ll = reverse_byte_order(frame[3]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
 
+
+			/*
+			// This works -- but frames are lost
 			printf ("%0x ", frame[0] & 0xff);
-			for (i = 1; i < 3; i++) {
+			for (i = 1; i < 2; i++) {
 				printf ("%0x " , reverse_byte_order(frame[i]));
 			}
 			printf ("\n");
+			*/
 
-			//printf ("%x\n", 
-			//	((la-ra)>>8)&0xffff // Lead I
-			//); 
+			if ( (frame[0]&0x40) == 0) {
+				printf ("%x %d\n", 
+					frame[0]&0xff,
+					(la&0xffff) 
+				);
+			}
+	
 
 			#endif
 
@@ -181,11 +189,6 @@ int main(void) {
 	
 		}
 
-		delay();
-
-		// Reset
-		adas1000_register_write (0x01, 0x000001);
-		delay();
 
 		// Power everything off by writing 0x0 into ECGCTL
 		adas1000_register_write (0x01, 0x000000);
