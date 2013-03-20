@@ -53,6 +53,7 @@
 #define OUTPUT (1)
 
 #define ADAS1000
+//#define SRAM_IC
 #define OUTPUT_DATA
 
 void delay(void);
@@ -65,14 +66,88 @@ uint32_t reverse_byte_order (uint32_t in);
 int main(void) {
 	uint32_t i,j;
 	uint32_t la,ra,ll;
+
+	uint8_t request[SSP_FIFOSIZE];
+	uint8_t response[SSP_FIFOSIZE];
+
 	systemInit();
+
+
+
 	uartInit(115200);
-	//uartInit(230400);
 
 	set_pins();
 
+
+
+
+
 #ifdef ASAS1000
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+#endif
+
+
+
+
+#ifdef SRAM_IC
+while(1) {
+
+	printf ("Loop start\n");
+
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+
+	//gpioSetValue(1,8,1);
+	//gpioSetValue(1,8,0);
+
+	// /CS for 23LC1024 SRAM IC
+	//gpioSetDir(0,3,OUTPUT);
+	//gpioSetValue (0,3,1);
+
+	// Set byte mode
+	gpioSetValue(0,3,0);
+	request[0] = 0x01;  // WRMR command
+	request[1] = 0x00; // Byte mode
+	gpioSetValue(1,8,1);
+	sspSend(0, (uint8_t *)&request, 2);
+	gpioSetValue(0,3,1);
+	gpioSetValue(1,8,0); // LED off
+
+
+
+	// Test by writing to memory
+	//printf ("Write to memory\n");
+	gpioSetValue(0,3,0);
+	request[0] = 0x03;  // byte write
+	request[1] = 0x00;  // addr 0x000000
+	request[2] = 0x00;  //
+	request[3] = 0x00;  //
+	request[4] = 0x55;
+	sspSend(0, (uint8_t *)&request, 5);
+	gpioSetValue(0,3,1);
+
+	// Read it back
+	//printf ("Read back from memory\n");
+	gpioSetValue(0,3,0);
+	request[0] = 0x02;  // byte read
+	request[1] = 0x00;  // addr 0x000000
+	request[2] = 0x00;  //
+	request[3] = 0x00;  //
+	sspSend(0, (uint8_t *)&request, 4);
+	sspReceive (0, (uint8_t *)&response, 1);
+	gpioSetValue(0,3,1);
+
+	printf ("Memory test:\n ");
+	if (response[0] == 0x55) {
+		printf ("SUCCESS\n");
+	} else {
+		printf ("FAIL, expecting 0x55 but got %x\n", response[0]);
+		//printf ("FAIL\n");
+	}
+
+
+	delay();
+
+}
 #endif
 
 
@@ -83,8 +158,7 @@ int main(void) {
 	delay();
 	set_pins();
 
-	uint8_t request[SSP_FIFOSIZE];
-	uint8_t response[SSP_FIFOSIZE];
+
 
 	uint32_t frame[16];
 
