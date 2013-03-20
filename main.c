@@ -53,7 +53,7 @@
 #define OUTPUT (1)
 
 #define ADAS1000
-//#define SRAM_IC
+#define SRAM_IC
 #define OUTPUT_DATA
 
 void delay(void);
@@ -90,18 +90,7 @@ int main(void) {
 
 
 #ifdef SRAM_IC
-while(1) {
-
-	printf ("Loop start\n");
-
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-
-	//gpioSetValue(1,8,1);
-	//gpioSetValue(1,8,0);
-
-	// /CS for 23LC1024 SRAM IC
-	//gpioSetDir(0,3,OUTPUT);
-	//gpioSetValue (0,3,1);
 
 	// Set byte mode
 	gpioSetValue(0,3,0);
@@ -110,14 +99,13 @@ while(1) {
 	gpioSetValue(1,8,1);
 	sspSend(0, (uint8_t *)&request, 2);
 	gpioSetValue(0,3,1);
-	gpioSetValue(1,8,0); // LED off
 
-
+while(1) {
 
 	// Test by writing to memory
 	//printf ("Write to memory\n");
 	gpioSetValue(0,3,0);
-	request[0] = 0x03;  // byte write
+	request[0] = 0x02;  // byte write
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
@@ -128,7 +116,7 @@ while(1) {
 	// Read it back
 	//printf ("Read back from memory\n");
 	gpioSetValue(0,3,0);
-	request[0] = 0x02;  // byte read
+	request[0] = 0x03;  // byte read
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
