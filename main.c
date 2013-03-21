@@ -58,6 +58,9 @@
 
 void delay(void);
 void setLED(int);
+void testFail(void);
+void sramSelect(void);
+void sramDeselect(void);
 void set_pins(void);
 void adas1000_init(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
@@ -99,41 +102,38 @@ int main(void) {
 	//
 
 	// Set byte mode
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x01;  // WRMR command
 	request[1] = 0x00; // Byte mode
 	gpioSetValue(1,8,1);
 	sspSend(0, (uint8_t *)&request, 2);
-	gpioSetValue(0,3,1);
+	sramDeselect();
 
 	// Test by writing to memory
-	//printf ("Write to memory\n");
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x02;  // write command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
 	request[4] = 0x55;
 	sspSend(0, (uint8_t *)&request, 5);
-	gpioSetValue(0,3,1);
+	sramDeselect();
 
 	// Read it back
-	//printf ("Read back from memory\n");
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x03;  // read command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
 	sspSend(0, (uint8_t *)&request, 4);
 	sspReceive (0, (uint8_t *)&response, 1);
-	gpioSetValue(0,3,1);
+	sramDeselect();
 
 	printf ("Memory test:\n ");
 	if (response[0] == 0x55) {
 		printf ("SUCCESS\n");
 	} else {
-		printf ("FAIL, expecting 0x55 but got %x\n", response[0]);
-		//printf ("FAIL\n");
+		testFail();
 	}
 
 	//
@@ -149,7 +149,7 @@ int main(void) {
 	gpioSetValue(0,3,1);
 
 	// Write to memory
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x02;  // write command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
@@ -161,10 +161,10 @@ int main(void) {
 		sspSend(0, (uint8_t *)&request, 1);
 		j += i;
 	}
-	gpioSetValue(0,3,1);
+	sramDeselect();
 
 	// Read back	
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x03;  // read command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
@@ -175,11 +175,9 @@ int main(void) {
 		sspReceive(0, (uint8_t *)&response, 1);
 		j -= i;
 	}
-	gpioSetValue(0,3,1);
+	sramDeselect();
 	if (j!=0) {
-		// Signal severe error
-		gpioSetValue(1,8,1);
-		while (1);
+		testFail();
 	}
 
 	delay();
@@ -322,6 +320,16 @@ void delay(void) {
 }
 void setLED (int b) {
 	gpioSetValue(1,8,b);
+}
+void testFail(void) {
+	setLED(1);
+	while(1);
+}
+void sramSelect () {
+	gpioSetValue(0,3,0);
+}
+void sramDeselect () {
+	gpioSetValue(0,3,1);
 }
 
 void adas1000_init (void) {
