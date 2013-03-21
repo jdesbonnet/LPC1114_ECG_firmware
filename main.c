@@ -53,14 +53,16 @@
 #define OUTPUT (1)
 
 #define ADAS1000
-#define SRAM_IC
+#define SRAM_23LC1024
 #define OUTPUT_DATA
 
 void delay(void);
+void setLED(int);
 void set_pins(void);
 void adas1000_init(void);
 void adas1000_register_write (uint8_t reg, uint32_t value);
 uint32_t adas1000_register_read (uint8_t reg);
+void adas1000_testtone_enable(void);
 uint32_t reverse_byte_order (uint32_t in);
 
 int main(void) {
@@ -89,12 +91,12 @@ int main(void) {
 
 
 
-#ifdef SRAM_IC
+#ifdef SRAM_23LC1024
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
-
-
-while(1) {
+	// 
+	// Test byte mode read/write
+	//
 
 	// Set byte mode
 	gpioSetValue(0,3,0);
@@ -135,14 +137,14 @@ while(1) {
 	}
 
 	//
-	// Test sequential mode
+	// Test sequential mode read/write
 	//
 
 	// Set sequential mode
 	gpioSetValue(0,3,0);
 	request[0] = 0x01; // WRMR command
 	request[1] = 0x40; // Sequential mode
-	gpioSetValue(1,8,1);
+
 	sspSend(0, (uint8_t *)&request, 2);
 	gpioSetValue(0,3,1);
 
@@ -175,12 +177,13 @@ while(1) {
 	}
 	gpioSetValue(0,3,1);
 	if (j!=0) {
+		// Signal severe error
+		gpioSetValue(1,8,1);
 		while (1);
 	}
 
 	delay();
 
-}
 #endif
 
 
@@ -255,8 +258,8 @@ while(1) {
 			do {
 				sspReceive (0, (uint8_t *)&frame[0], 4);
 				i = frame[0] &0xff;
-				if (i & 0x80 == 0) {
-					printf ("*", i);
+				if ( (i & 0x80) == 0) {
+					printf ("*");
 				}
 			} while ( (i&0x80) == 0);
 
@@ -316,6 +319,9 @@ void delay(void) {
 	for (i = 0; i < 1024; i++) {
 		__asm volatile ("NOP");
 	}
+}
+void setLED (int b) {
+	gpioSetValue(1,8,b);
 }
 
 void adas1000_init (void) {
