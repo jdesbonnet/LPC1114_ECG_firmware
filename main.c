@@ -53,7 +53,7 @@
 #define OUTPUT (1)
 
 #define ADAS1000
-#define SRAM_23LC1024
+//#define SRAM_23LC1024
 #define OUTPUT_DATA
 
 void delay(void);
@@ -71,6 +71,7 @@ uint32_t reverse_byte_order (uint32_t in);
 int main(void) {
 	uint32_t i,j;
 	uint32_t la,ra,ll;
+	uint32_t base_addr;
 
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
@@ -141,12 +142,12 @@ int main(void) {
 	//
 
 	// Set sequential mode
-	gpioSetValue(0,3,0);
+	sramSelect();
 	request[0] = 0x01; // WRMR command
 	request[1] = 0x40; // Sequential mode
-
 	sspSend(0, (uint8_t *)&request, 2);
-	gpioSetValue(0,3,1);
+	sramDeselect();
+
 
 	// Write to memory
 	sramSelect();
@@ -217,7 +218,6 @@ int main(void) {
 
 
 		// Using PIO1_8 to enable power to ASAS1000
-		//gpioSetValue (1,8,1);
 
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
@@ -242,12 +242,7 @@ int main(void) {
 		for (j = 0; j<10000; j++) {
 
 			// Wait for /DRDY
-			gpioSetValue(1,8,1);
-			//printf ("%d" , gpioGetValue(0,11));
-			//printf ("%x\n", GPIO_GPIO0DATA);
 			while (gpioGetValue(0,5) != 0) ;
-			gpioSetValue(1,8,0);
-
 			// Data is available
 
 			ssp0Select();
@@ -268,29 +263,46 @@ int main(void) {
 
 			ssp0Deselect();
 
-			#ifdef OUTPUT_DATA
+
 			la = reverse_byte_order(frame[1]&0xffffff);
+			la = frame[1]&0xffffff;
 			//ll = reverse_byte_order(frame[3]&0xffffff);
 			ra = reverse_byte_order(frame[2]&0xffffff);
+			ra = frame[2]&0xffffff;
 
+			//la = 0x01020304;
+			//ra = 0x55667788;
 
-			/*
-			// This works -- but frames are lost
-			printf ("%0x ", frame[0] & 0xff);
-			for (i = 1; i < 2; i++) {
-				printf ("%0x " , reverse_byte_order(frame[i]));
-			}
-			printf ("\n");
-			*/
+			#ifdef SRAM_23LC1024
+			// Write ECG record to memory
+			sramSelect();
+			base_addr = j * 8;
+			request[0] = 0x02;  // write command
+			request[1] = (base_addr>>16)&0xff; 
+			request[2] = (base_addr>>8)&0xff;
+			request[3] = base_addr & 0xff;
+			sspSend(0, (uint8_t *)&request, 4);
+			// Write ECG header byte
+			request[0] = frame[0] & 0xff;
+			sspSend(0, (uint8_t *)&request, 1);
+			// Write LA,RA
+			sspSend(0, (uint8_t *)&la, 3);
+			sspSend(0, (uint8_t *)&ra, 3);
+			sramDeselect();
+			#endif
 
+			#ifdef OUTPUT_DATA
 			if ( (frame[0]&0x40) == 0) {
+				
 				printf ("%x %d\n", 
 					frame[0]&0xff,
 					(la&0xffff) 
 				);
+				
+				printf ("%x\n", 
+					frame[0]&0xff
+				);
 			}
-	
-
 			#endif
 
 
@@ -301,7 +313,27 @@ int main(void) {
 		// Power everything off by writing 0x0 into ECGCTL
 		adas1000_register_write (0x01, 0x000000);
 
-		delay();
+
+		#ifdef SRAM_23LC1024
+		// Read back data from SRAM
+		for (j = 0; j < 10000; j++) {
+			sramSelect();
+			base_addr = j * 8;
+			request[0] = 0x03;  // read command
+			request[1] = (base_addr>>16)&0xff; 
+			request[2] = (base_addr>>8)&0xff;
+			request[3] = base_addr & 0xff;
+			sspSend(0, (uint8_t *)&request, 4);
+			sspReceive (0, (uint8_t *)&response, 1);
+			printf ("%x ", response[0]);
+			la=0; ra=0;
+			sspReceive (0, (uint8_t *)&la, 3);
+			sspReceive (0, (uint8_t *)&ra, 3);
+			printf ("%x %x\n", la, ra);
+			sramDeselect();
+		}
+
+		#endif
 
 #endif
 
