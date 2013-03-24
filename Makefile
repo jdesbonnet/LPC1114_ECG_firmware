@@ -1,6 +1,6 @@
 ##########################################################################
 # User configuration and firmware specific object files	
-##########################################################################
+##################################################################cmd########
 
 # The target, flash and ram of the LPC1xxx microprocessor.
 # Use for the target the value: LPC11xx, LPC13xx or LPC17xx
@@ -40,6 +40,7 @@ VPATH += project/commands
 OBJS += cmd_chibi_addr.o cmd_chibi_tx.o cmd_deepsleep.o
 OBJS += cmd_i2ceeprom_read.o cmd_i2ceeprom_write.o cmd_lm75b_gettemp.o
 OBJS += cmd_sysinfo.o cmd_sd_dir.o cmd_reset.o
+OBJS += cmd_ecg_capture.o
 
 ##########################################################################
 # Optional driver files 
@@ -87,6 +88,10 @@ OBJS += pn532_mifare_classic.o pn532_mifare_ultralight.o
 # TAOS Light Sensors
 VPATH += drivers/sensors/tsl2561
 OBJS += tsl2561.o
+
+# ADAS1x9x ECG FE
+#VPATH += drivers/medical/ecg/adas1x9x
+#OBJS += adas1x9x.o
 
 ##########################################################################
 # Library files 
