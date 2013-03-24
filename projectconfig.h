@@ -40,6 +40,9 @@
 #include "lpc111x.h"
 #include "sysdefs.h"
 
+#define CFG_ADAS1000
+#define CFG_ADAS1000_DEBUG
+
 /*=========================================================================
     BOARD SELECTION
 
@@ -420,7 +423,7 @@
                               show how SDCARD is meant to be connected/used
     -----------------------------------------------------------------------*/
     #ifdef CFG_BRD_LPC1114_REFDESIGN
-      // #define CFG_SDCARD
+      #define CFG_SDCARD
       #define CFG_SDCARD_READONLY         (0)
       #define CFG_SDCARD_CDPORT           (2)
       #define CFG_SDCARD_CDPIN            (4)

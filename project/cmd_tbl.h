@@ -71,6 +71,10 @@ void cmd_sd_dir(uint8_t argc, char **argv);
 
 void cmd_deepsleep(uint8_t argc, char **argv);
 
+#ifdef CFG_ADAS1000
+void cmd_ecg_capture (uint8_t argc, char **argv);
+#endif
+
 #define CMD_NOPARAMS "This command has no parameters"
 
 /**************************************************************************/
@@ -106,6 +110,11 @@ cmd_t cmd_tbl[] =
   #ifdef CFG_SDCARD
   { "d",    0,  1,  0,  cmd_sd_dir           , "Dir (SD Card)"                  , "'d [<path>]'" },
   #endif
+
+  #ifdef CFG_ADAS1000
+  { "E",    0,	0,  0,  cmd_ecg_capture      , "Capture ECG"                    , CMD_NOPARAMS },
+  #endif
+
 
   { "z",    0,  0,  0,  cmd_deepsleep        , "Deep sleep for ~10 seconds"     , CMD_NOPARAMS },
 };
