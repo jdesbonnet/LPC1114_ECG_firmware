@@ -491,7 +491,8 @@
     #ifdef CFG_BRD_LPC1114_REFDESIGN
       #define CFG_INTERFACE
       #define CFG_INTERFACE_MAXMSGSIZE    (256)
-      #define CFG_INTERFACE_PROMPT        "LPC1114 >> "
+      //#define CFG_INTERFACE_PROMPT        "LPC1114 >> "
+      #define CFG_INTERFACE_PROMPT        "ECG >> "
     #endif
 
     #ifdef CFG_BRD_LPC1114_802154WIRELESS
