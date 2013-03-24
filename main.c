@@ -52,9 +52,9 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
-#define ADAS1000
+//#define ADAS1000
 //#define SRAM_23LC1024
-#define OUTPUT_DATA
+//#define OUTPUT_DATA
 
 void delay(void);
 void setLED(int);
@@ -69,7 +69,7 @@ void adas1000_testtone_enable(void);
 uint32_t reverse_byte_order (uint32_t in);
 
 int main(void) {
-	uint32_t i,j;
+	uint32_t i,j,k;
 	uint32_t la,ra,ll;
 	uint32_t base_addr;
 
@@ -206,18 +206,15 @@ int main(void) {
 		//printf ("Sleeping...\r\n");
 		delay();
 
+		#ifdef SLEEP_EN
 		// Seems very important to setup pins before sleep. Sleeping after
 		// SPI pin setup does not result in low power sleep.
 		set_pins();
 
 		pmuDeepSleep(1);
 
-
 		//printf ("Wake!\r\n");
 		delay();
-
-
-		// Using PIO1_8 to enable power to ASAS1000
 
 		sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
@@ -230,6 +227,8 @@ int main(void) {
 		GPIO_GPIO0DIR &= ~(1<<5);
 
 
+		#endif // end ifdef SLEEP_EN
+
 #ifdef ADAS1000
 		adas1000_init();
 
@@ -239,6 +238,7 @@ int main(void) {
 		adas1000_register_read (0x40);
 
 
+		k = 0;
 		for (j = 0; j<10000; j++) {
 
 			// Wait for /DRDY
@@ -264,19 +264,20 @@ int main(void) {
 			ssp0Deselect();
 
 
-			la = reverse_byte_order(frame[1]&0xffffff);
-			la = frame[1]&0xffffff;
+			la = reverse_byte_order(frame[1])&0xffffff;
+			//la = frame[1]&0xffffff;
 			//ll = reverse_byte_order(frame[3]&0xffffff);
-			ra = reverse_byte_order(frame[2]&0xffffff);
-			ra = frame[2]&0xffffff;
+			ra = reverse_byte_order(frame[2])&0xffffff;
+			//ra = frame[2]&0xffffff;
 
 			//la = 0x01020304;
 			//ra = 0x55667788;
 
 			#ifdef SRAM_23LC1024
+			if ( (frame[0]&0x40) == 0) {
 			// Write ECG record to memory
 			sramSelect();
-			base_addr = j * 8;
+			base_addr = (k++) * 8;
 			request[0] = 0x02;  // write command
 			request[1] = (base_addr>>16)&0xff; 
 			request[2] = (base_addr>>8)&0xff;
@@ -289,22 +290,27 @@ int main(void) {
 			sspSend(0, (uint8_t *)&la, 3);
 			sspSend(0, (uint8_t *)&ra, 3);
 			sramDeselect();
+			}
 			#endif
 
 			#ifdef OUTPUT_DATA
 			if ( (frame[0]&0x40) == 0) {
-				
+				/*
 				printf ("%x %d\n", 
 					frame[0]&0xff,
 					(la&0xffff) 
 				);
+				*/
 				
 				printf ("%x\n", 
 					frame[0]&0xff
 				);
+				
 			}
 			#endif
 
+
+cmdPoll();
 
 	
 		}
@@ -316,7 +322,7 @@ int main(void) {
 
 		#ifdef SRAM_23LC1024
 		// Read back data from SRAM
-		for (j = 0; j < 10000; j++) {
+		for (j = 0; j < k; j++) {
 			sramSelect();
 			base_addr = j * 8;
 			request[0] = 0x03;  // read command
@@ -335,7 +341,9 @@ int main(void) {
 
 		#endif
 
-#endif
+#endif // end ifdef ADAS1000
+
+cmdPoll();
 
 
 	}
@@ -462,7 +470,7 @@ void adas1000_register_write (uint8_t reg, uint32_t value) {
 uint32_t adas1000_register_read (uint8_t reg) {
 	uint8_t request[4];
 	//uint8_t response[4];
-	uint32_t response, ret;
+	uint32_t response;
 	ssp0Select();
 	request[0] = reg & 0x7F;
 	sspSend(0, (uint8_t *)&request, 4);
