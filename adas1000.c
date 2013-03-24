@@ -136,6 +136,12 @@ int adas1000_wait_drdy (void) {
 	return -1; // timeout
 }
 
+volatile uint32_t adas1000_flags=0;
+
+void adas1000_ecg_capture_stop () {
+	adas1000_flags = 1 ;
+}
+
 void adas1000_ecg_capture (uint32_t nsamples) {
 
 	uint32_t i,j,k;
@@ -147,12 +153,23 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 	uint32_t frame[16];
 
 
+	adas1000_flags = 0;
+
 	// This starts the data...
 	adas1000_register_read (0x40);
 
 
 	k = 0;
 	for (j = 0; j<nsamples; j++) {
+
+		if (j % 100 == 0) {
+			cmdPoll();
+			if (adas1000_flags == 1) {
+				printf ("ECG capture stop\n");
+				return;
+			}
+		}
+
 
 		// Wait for /DRDY
 		if (adas1000_wait_drdy() == -1) {

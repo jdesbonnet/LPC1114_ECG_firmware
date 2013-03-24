@@ -43,8 +43,19 @@ void cmd_ecg_capture(uint8_t argc, char **argv)
 	adas1000_ecg_capture(10000);
 	printf ("End capture.\n");
 	adas1000_power_off();
+	#else
+	printf ("ADAS1000 not in build.\n");
+	#endif // end ifdef ADAS1000
+}
+void cmd_ecg_playback(uint8_t argc, char **argv)
+{
+	#ifdef CFG_ADAS1000
 	adas1000_ecg_playback(10000);
 	#else
 	printf ("ADAS1000 not in build.\n");
 	#endif // end ifdef ADAS1000
+}
+void cmd_ecg_capture_stop (uint8_t argc, char **argv)
+{
+	adas1000_ecg_capture_stop();
 }

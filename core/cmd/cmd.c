@@ -101,6 +101,7 @@ void cmdRx(uint8_t c)
         // it to the handler for processing.
         *msg_ptr = '\0';
         printf("%s", CFG_PRINTF_NEWLINE);
+        msg_ptr = msg; // Need to reset before exec cmd, to allow for interrupt
         cmdParse((char *)msg);
         msg_ptr = msg;
         break;
