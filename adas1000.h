@@ -8,6 +8,7 @@ void adas1000_testtone_disable (void);
 void adas1000_power_off (void);
 
 void adas1000_ecg_capture (uint32_t nsamples);
+void adas1000_ecg_capture_stop (void);
 void adas1000_ecg_playback (uint32_t nsamples);
 void adas1000_reset(void);
 
