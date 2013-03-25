@@ -74,14 +74,25 @@ void adas1000_init (void) {
 
 }
 
-void adas1000_testtone_enable (void) {
+void adas1000_reset (void) {
+	adas1000_power_off();
+	adas1000_init();
+}
+
+void adas1000_testtone_enable (int toneType) {
 
 	// 10Hz 1mV p-p sine wave to LA
 	adas1000_register_write (0x08, // TESTTONE register
 		(1<<23)  // connect test toneto LA
+		| (1<<21)  // connect test toneto RA
+		| (toneType & TONETYPE_MASK)
 		| (1<<2) // TONINT (connect internally)
 		| (1<<0) // TONEN (enable test tone)
 	);
+}
+void adas1000_testtone_disable (void) {
+	// Write 0x00 to TESTTONE register
+	adas1000_register_write (0x08, 0);
 }
 
 void adas1000_print_diagnostics(void) {
@@ -120,6 +131,7 @@ uint32_t adas1000_register_read (uint8_t reg) {
 	// Reverse byte order
 	return reverse_byte_order(response);
 }
+
 void adas1000_power_off (void) {
 	// Power everything off by writing 0x0 into ECGCTL
 	adas1000_register_write (0x01, 0x000000);
@@ -147,8 +159,9 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 	uint32_t i,j,k;
 	uint32_t la,ra,ll;
 	uint32_t base_addr;
+	uint32_t skip;
 
-	uint8_t request[SSP_FIFOSIZE];
+	uint8_t request[4];
 
 	uint32_t frame[16];
 
@@ -159,8 +172,8 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 	adas1000_register_read (0x40);
 
 
-	k = 0;
-	for (j = 0; j<nsamples; j++) {
+	k = 0; j = 0; skip=0;
+	while ( j < nsamples) {
 
 		if (j % 100 == 0) {
 			cmdPoll();
@@ -177,7 +190,11 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 			return;
 		}
 
-		// Data is available
+
+
+		//
+		// Data is available. Read ECG frame.
+		//
 
 		ssp0Select();
 
@@ -190,42 +207,43 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 			}
 		} while ( (i&0x80) == 0);
 
+		// Have header, now read the rest of the frame
 		for (i = 1; i < 4; i++) {
 			sspReceive (0, (uint8_t *)&frame[i], 4);
 		}
-
 		ssp0Deselect();
 
 
 		la = reverse_byte_order(frame[1])&0xffffff;
-		//la = frame[1]&0xffffff;
 		//ll = reverse_byte_order(frame[3]&0xffffff);
 		ra = reverse_byte_order(frame[2])&0xffffff;
-		//ra = frame[2]&0xffffff;
 
-		//la = 0x01020304;
-		//ra = 0x55667788;
-
-		//#ifdef SRAM_23LC1024
+		//
+		// Write ECG frame to memory if header indicates a good record
+		//
 		if ( (frame[0]&0x40) == 0) {
-		// Write ECG record to memory
-		sramSelect();
-		base_addr = (k++) * 8;
-		request[0] = 0x02;  // write command
-		request[1] = (base_addr>>16)&0xff; 
-		request[2] = (base_addr>>8)&0xff;
-		request[3] = base_addr & 0xff;
-		sspSend(0, (uint8_t *)&request, 4);
-		// Write ECG header byte
-		request[0] = frame[0] & 0xff;
-		sspSend(0, (uint8_t *)&request, 1);
-		// Write LA,RA
-		sspSend(0, (uint8_t *)&la, 3);
-		sspSend(0, (uint8_t *)&ra, 3);
-		sramDeselect();
+			//printf ("%x\n",la);
+			// Write ECG record to external memory
+			sramSelect();
+			base_addr = (k++) * 8;
+			request[0] = 0x02;  // write command
+			request[1] = (base_addr>>16)&0xff; 
+			request[2] = (base_addr>>8)&0xff;
+			request[3] = base_addr & 0xff;
+			sspSend(0, (uint8_t *)&request, 4);
+			// Write ECG header byte
+			request[0] = frame[0] & 0xff;
+			sspSend(0, (uint8_t *)&request, 1);
+			// Write LA,RA
+			sspSend(0, (uint8_t *)&la, 3);
+			sspSend(0, (uint8_t *)&ra, 3);
+			sramDeselect();
+			j++;
+		} else {
+			skip++;
 		}
-		//#endif
 	}
+	printf ("%d samples captured, %d samples skipped.\n", j, skip);
 
 }
 
@@ -234,8 +252,8 @@ void adas1000_ecg_playback (uint32_t nsamples) {
 	uint32_t i,j;
 	uint32_t la,ra,ll;
 
-	uint8_t request[SSP_FIFOSIZE];
-	uint8_t response[SSP_FIFOSIZE];
+	uint8_t request[4];
+	uint8_t response[1];
 
 	uint32_t base_addr;
 
@@ -253,7 +271,8 @@ void adas1000_ecg_playback (uint32_t nsamples) {
 		la=0; ra=0;
 		sspReceive (0, (uint8_t *)&la, 3);
 		sspReceive (0, (uint8_t *)&ra, 3);
-		printf ("%x %x\n", la, ra);
+		//printf ("%x %x\n", la, ra);
+		printf ("%d %d\n", la, ra);
 		sramDeselect();
 	}
 

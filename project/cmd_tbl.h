@@ -75,6 +75,8 @@ void cmd_deepsleep(uint8_t argc, char **argv);
 void cmd_ecg_capture (uint8_t argc, char **argv);
 void cmd_ecg_capture_stop (uint8_t argc, char **argv);
 void cmd_ecg_playback (uint8_t argc, char **argv);
+void cmd_ecg_testtone (uint8_t argc, char **argv);
+void cmd_ecg_reset (uint8_t argc, char **argv);
 #endif
 
 #define CMD_NOPARAMS "This command has no parameters"
@@ -116,7 +118,9 @@ cmd_t cmd_tbl[] =
   #ifdef CFG_ADAS1000
   { "E",    0,	0,  0,  cmd_ecg_capture      , "ECG capture start"            , CMD_NOPARAMS },
   { "X",    0,	0,  0,  cmd_ecg_capture_stop , "ECG capture stop"             , CMD_NOPARAMS },
+  { "T",    0,	0,  0,  cmd_ecg_testtone      , "ECG test tone enable"          , CMD_NOPARAMS },
   { "P",    0,	0,  0,  cmd_ecg_playback      , "ECG playback"            , CMD_NOPARAMS },
+  { "R",    0,	0,  0,  cmd_ecg_reset      , "ECG AFE reset"            , CMD_NOPARAMS },
   #endif
 
 
