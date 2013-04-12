@@ -2,6 +2,9 @@
 #include "core/ssp/ssp.h"
 #include "adas1000.h"
 
+volatile uint32_t adas1000_flags=0;
+volatile uint32_t adas1000_nsample=0;
+
 uint32_t reverse_byte_order (uint32_t in) {
 	return (in>>24) | ((in>>8)&0x0000ff00) | ((in<<8)&0x00ff0000) | (in<<24);
 }
@@ -41,9 +44,7 @@ void adas1000_init (void) {
 	#define A_DIS (1<<7)
 	#define RDYRPT (1<<6)
 	#define DATAFMT (1<<4)
-	#define FRMCTL_SKIP_MASK (0x0000000C) // 0b...0000 1100
-	#define FRMCTL_SKIP_1 (0x00000004)
-	#define FRMCTL_SKIP_3 (0x00000008)
+
 	//adas1000_register_write (0x0A, 0x079200); // 0000 0111 1001 0010 0000 0000
 	//adas1000_register_write (0x0A, 0x1FB600); // 0001 1111 1011 0110 0000 0000
 	adas1000_register_write (0x0A,
@@ -148,10 +149,31 @@ int adas1000_wait_drdy (void) {
 	return -1; // timeout
 }
 
-volatile uint32_t adas1000_flags=0;
+
 
 void adas1000_ecg_capture_stop () {
 	adas1000_flags = 1 ;
+}
+
+
+void adas1000_rate(int rate) {
+	uint32_t v = adas1000_register_read(0x0A);
+	v &= ~FRMCTL_SKIP_MASK;
+	printf ("FRMCTL(b)=%x\n", v);
+	switch (rate) {
+		case 500:
+			v &= FRMCTL_SKIP_3;
+			break;
+		case 1000:
+			v &= FRMCTL_SKIP_1;
+			break;
+		case 2000:
+			v &= FRMCTL_SKIP_0;
+			break;
+		
+	}
+	printf ("FRMCTL(a)=%x\n", v);
+	adas1000_register_write(0x0A, v);
 }
 
 void adas1000_ecg_capture (uint32_t nsamples) {
@@ -167,6 +189,8 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 
 
 	adas1000_flags = 0;
+
+	adas1000_nsample = nsamples;
 
 	// This starts the data...
 	adas1000_register_read (0x40);
@@ -249,7 +273,7 @@ void adas1000_ecg_capture (uint32_t nsamples) {
 
 void adas1000_ecg_playback (uint32_t nsamples) {
 
-	uint32_t i,j;
+	uint32_t j;
 	uint32_t la,ra,ll;
 
 	uint8_t request[4];
@@ -258,7 +282,7 @@ void adas1000_ecg_playback (uint32_t nsamples) {
 	uint32_t base_addr;
 
 	// Read back data from SRAM
-	for (j = 0; j < nsamples; j++) {
+	for (j = 0; j < adas1000_nsample; j++) {
 		sramSelect();
 		base_addr = j * 8;
 		request[0] = 0x03;  // read command

@@ -11,6 +11,7 @@
 */
 /**************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "projectconfig.h"
 #include "core/cmd/cmd.h"
@@ -34,8 +35,26 @@ uint32_t reverse_byte_order (uint32_t in);
 /**************************************************************************/
 void cmd_ecg_capture(uint8_t argc, char **argv)
 {
+
+int i;
+for (i = 0; i < argc; i++) {
+	printf ("arg[%d]=%s\n",i,argv[i]);
+}
+
+	int nsample = NSAMPLE;
+	int rate = 500;
+	if (argc >= 1) {
+		nsample = atoi(argv[0]);
+		printf ("nsample=%d\n",nsample);
+	}
+	if (argc >= 2) {
+		if ( (argv[1][0]=='-') && (argv[1][1]=='r') ) {
+			rate = atoi(argv[1]+2);
+			printf ("rate=%d\n", rate);
+		}
+	}
 	adas1000_init();
-	adas1000_ecg_capture(NSAMPLE);
+	adas1000_ecg_capture(nsample);
 	adas1000_power_off();
 }
 void cmd_ecg_reset(uint8_t argc, char **argv)

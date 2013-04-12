@@ -116,11 +116,11 @@ cmd_t cmd_tbl[] =
   #endif
 
   #ifdef CFG_ADAS1000
-  { "E",    0,	0,  0,  cmd_ecg_capture      , "ECG capture start"            , CMD_NOPARAMS },
-  { "X",    0,	0,  0,  cmd_ecg_capture_stop , "ECG capture stop"             , CMD_NOPARAMS },
-  { "T",    0,	0,  0,  cmd_ecg_testtone      , "ECG test tone enable"          , CMD_NOPARAMS },
-  { "P",    0,	0,  0,  cmd_ecg_playback      , "ECG playback"            , CMD_NOPARAMS },
-  { "R",    0,	0,  0,  cmd_ecg_reset      , "ECG AFE reset"            , CMD_NOPARAMS },
+  { "CAPTURE",    0,	2,  0,  cmd_ecg_capture      , "ECG capture start"            , "ECG_CAPTURE nsample -r<rate>" },
+  { "STOP",    0,	0,  0,  cmd_ecg_capture_stop , "ECG capture stop"             , CMD_NOPARAMS },
+  { "TESTTONE",    0,	0,  0,  cmd_ecg_testtone      , "ECG test tone enable"          , CMD_NOPARAMS },
+  { "DOWNLOAD",    0,	0,  0,  cmd_ecg_playback      , "ECG download"            , CMD_NOPARAMS },
+  { "RESET",    0,	0,  0,  cmd_ecg_reset      , "ECG AFE reset"            , CMD_NOPARAMS },
   #endif
 
 

@@ -1,2 +1,2 @@
-plot 't.t' using ($2-$3), 't.t' using 2, 't.t' using 3
+plot 't.t' using ($2-$3) with linespoints
 pause -1

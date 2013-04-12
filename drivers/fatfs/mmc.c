@@ -34,8 +34,8 @@
 
 
 /* Port Controls  (Platform dependent) */
-#define CS_LOW()    gpioSetValue(SSP1_CSPORT, SSP1_CSPIN, 0)
-#define CS_HIGH()   gpioSetValue(SSP1_CSPORT, SSP1_CSPIN, 1)
+#define CS_LOW()    gpioSetValue(0, 2, 0)
+#define CS_HIGH()   gpioSetValue(0, 2, 1)
 
 // #define	FCLK_SLOW()					/* Set slow clock (100k-400k) */
 // #define	FCLK_FAST()					/* Set fast clock (depends on the CSD) */
@@ -65,12 +65,12 @@ BYTE CardType;			/* Card type flags */
 static void FCLK_SLOW()
 {
     /* Divide by 5 (SSPCLKDIV also enables to SSP CLK) */
-    SCB_SSP1CLKDIV = SCB_SSP1CLKDIV_DIV5;
+    SCB_SSP0CLKDIV = SCB_SSP0CLKDIV_DIV5;
   
     /* (PCLK / (CPSDVSR * [SCR+1])) = (7,200,000 / (2 x [8 + 1])) = 400 KHz */
-    uint32_t configReg = ( SSP_SSP1CR0_DSS_8BIT   // Data size = 8-bit
-                  | SSP_SSP1CR0_FRF_SPI           // Frame format = SPI
-                  | SSP_SSP1CR0_SCR_8);           // Serial clock rate = 8
+    uint32_t configReg = ( SSP_SSP0CR0_DSS_8BIT   // Data size = 8-bit
+                  | SSP_SSP0CR0_FRF_SPI           // Frame format = SPI
+                  | SSP_SSP0CR0_SCR_8);           // Serial clock rate = 8
 
     // Set clock polarity (low between frames)
     // configReg &= ~SSP_SSP1CR0_CPOL_MASK;
@@ -81,10 +81,10 @@ static void FCLK_SLOW()
     // configReg |= SSP_SSP1CR0_CPHA_FIRST;
 
     // Assign config values to SSP1CR0
-    SSP_SSP1CR0 = configReg;
+    SSP_SSP0CR0 = configReg;
   
     /* Clock prescale register must be even and at least 2 in master mode */
-    SSP_SSP1CPSR = SSP_SSP1CPSR_CPSDVSR_DIV2;  
+    SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV2;  
 }
 
 /**************************************************************************/
@@ -95,12 +95,12 @@ static void FCLK_SLOW()
 static void FCLK_FAST()
 {
     /* Divide by 1 (SSPCLKDIV also enables to SSP CLK) */
-    SCB_SSP1CLKDIV = SCB_SSP1CLKDIV_DIV1;
+    SCB_SSP0CLKDIV = SCB_SSP0CLKDIV_DIV1;
   
     /* (PCLK / (CPSDVSR * [SCR+1])) = (36,000,000 / (2 x [8 + 1])) = 2.0 MHz */
-    uint32_t configReg = ( SSP_SSP1CR0_DSS_8BIT   // Data size = 8-bit
-                  | SSP_SSP1CR0_FRF_SPI           // Frame format = SPI
-                  | SSP_SSP1CR0_SCR_8);           // Serial clock rate = 8
+    uint32_t configReg = ( SSP_SSP0CR0_DSS_8BIT   // Data size = 8-bit
+                  | SSP_SSP0CR0_FRF_SPI           // Frame format = SPI
+                  | SSP_SSP0CR0_SCR_8);           // Serial clock rate = 8
   
     // Set clock polarity (low between frames)
     // configReg &= ~SSP_SSP1CR0_CPOL_MASK;
@@ -111,10 +111,10 @@ static void FCLK_FAST()
     // configReg |= SSP_SSP1CR0_CPHA_FIRST;
   
     // Assign config values to SSP1CR0
-    SSP_SSP1CR0 = configReg;
+    SSP_SSP0CR0 = configReg;
   
     /* Clock prescale register must be even and at least 2 in master mode */
-    SSP_SSP1CPSR = SSP_SSP1CPSR_CPSDVSR_DIV2;  
+    SSP_SSP0CPSR = SSP_SSP0CPSR_CPSDVSR_DIV2;  
 }
 
 /*-----------------------------------------------------------------------*/
@@ -123,8 +123,8 @@ static void FCLK_FAST()
 
 //#define xmit_spi(dat) (SSPSend((uint8_t*)&(dat), 1))
 static void xmit_spi(BYTE dat)
-{
-    sspSend(1, (uint8_t*) &dat, 1);
+{printf("W%x ",dat);
+    sspSend(0, (uint8_t*) &dat, 1);
 }
 
 
@@ -137,8 +137,8 @@ BYTE rcvr_spi (void)
 {
     BYTE data = 0;
 
-    sspReceive(1, &data, 1);
-
+    sspReceive(0, &data, 1);
+printf("%x ",data);
     return data;
 }
 
@@ -161,13 +161,13 @@ BYTE wait_ready (void)
 {
 	BYTE res;
 
-
+printf ("{WAIT");
 	Timer2 = 50;	/* Wait for ready in timeout of 500ms */
 	rcvr_spi();
 	do
 		res = rcvr_spi();
 	while ((res != 0xFF) && Timer2);
-
+printf ("}");
 	return res;
 }
 
@@ -179,7 +179,7 @@ BYTE wait_ready (void)
 
 static
 void deselect (void)
-{
+{printf ("H");
 	CS_HIGH();
 	rcvr_spi();
 }
@@ -192,12 +192,14 @@ void deselect (void)
 
 static
 BOOL select (void)	/* TRUE:Successful, FALSE:Timeout */
-{
+{printf ("L");
 	CS_LOW();
+
 	if (wait_ready() != 0xFF) {
-		deselect();
+		deselect(); printf("**SELECT ERROR**");
 		return FALSE;
 	}
+
 	return TRUE;
 }
 
@@ -224,7 +226,8 @@ void power_off (void)
 static
 int chk_power(void)		/* Socket power state: 0=off, 1=on */
 {
-  return gpioGetValue( CFG_SDCARD_ENPORT, CFG_SDCARD_ENPIN );
+  //return gpioGetValue( CFG_SDCARD_ENPORT, CFG_SDCARD_ENPIN );
+  return 1;
 }
 
 
@@ -307,7 +310,7 @@ BYTE send_cmd (
 	BYTE cmd,		/* Command byte */
 	DWORD arg		/* Argument */
 )
-{
+{printf ("CMD %x %x ",cmd,arg);
 	BYTE n, res;
 
 
@@ -319,7 +322,7 @@ BYTE send_cmd (
 
 	/* Select the card and wait for ready */
 	deselect();
-	if (!select()) return 0xFF;
+	if (!select()) {printf ("SELERR"); return 0xFF; }
 
 	/* Send command packet */
 	xmit_spi(cmd);						/* Start + Command index */
@@ -338,7 +341,7 @@ BYTE send_cmd (
 	do
 		res = rcvr_spi();
 	while ((res & 0x80) && --n);
-
+printf ("res=%x\n",res);
 	return res;			/* Return with the response value */
 }
 
@@ -362,10 +365,10 @@ DSTATUS disk_initialize (
 	BYTE n, cmd, ty, ocr[4];
 
         // Init SSP w/clock low between frames and transition on leading edge
-        sspInit(1, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+        sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
         // SSEL
-        gpioSetDir( SSP1_CSPORT, SSP1_CSPIN, gpioDirection_Output ); /* CS */
+        gpioSetDir(0, 2, gpioDirection_Output ); /* CS */
 
         // Card Detect
         gpioSetDir( CFG_SDCARD_CDPORT, CFG_SDCARD_CDPIN, gpioDirection_Input ); /* Card Detect */
@@ -386,6 +389,7 @@ DSTATUS disk_initialize (
 	for (n = 100; n; n--) rcvr_spi();               /* 80 dummy clocks */
 
 	ty = 0;
+	//send_cmd(CMD0, 0); // JD
 	if (send_cmd(CMD0, 0) == 1) {                   /* Enter Idle state */
 		Timer1 = 100;                           /* Initialization timeout of 1000 msec */
 		if (send_cmd(CMD8, 0x1AA) == 1) {       /* SDHC */
@@ -407,7 +411,7 @@ DSTATUS disk_initialize (
 			if (!Timer1 || send_cmd(CMD16, 512) != 0)   /* Set R/W block length to 512 */
 				ty = 0;
 		}
-	}
+	} else printf("Enter idle state fail.\n");
 	CardType = ty;
 	deselect();
 
