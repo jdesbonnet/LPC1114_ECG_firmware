@@ -53,7 +53,7 @@
 #define OUTPUT (1)
 
 int main(void) {
-	int i;
+	int i,j,n;
 	systemInit();
 	uartInit(115200);
 	set_pins();
@@ -64,25 +64,40 @@ int main(void) {
 	uint8_t response[SSP_FIFOSIZE];
 
 
-  	while (1) {
-
-
-		ssp0Select();
-		request[0] = 0x06; // RESET
-		sspSend(0, (uint8_t *)&request, 1);
-		//ssp0Deselect();
-		ssp0Deselect();
-
-
-		delay();
-
-
 
 		ssp0Select();
 		request[0] = 0x02; // WAKEUP
 		sspSend(0, (uint8_t *)&request, 1);
 		ssp0Deselect();
 
+
+		// Assert physical reset line
+		gpioSetValue (0,6,0);
+		delay(16);
+		gpioSetValue (0,6,1);
+		delay(512);
+
+		// Software reset
+		ssp0Select();
+		request[0] = 0x06; // RESET
+		sspSend(0, (uint8_t *)&request, 1);
+		ssp0Deselect();
+		delay(512);
+
+
+  	while (1) {
+
+
+		// Assert physical reset line
+/*
+		gpioSetValue (0,6,0);
+		delay(16);
+		gpioSetValue (0,6,1);
+		delay(1024);
+*/
+
+
+/*
 		ssp0Select();
 		request[0] = 0x08; // START
 		sspSend(0, (uint8_t *)&request, 1);
@@ -92,39 +107,41 @@ int main(void) {
 		request[0] = 0x10; // RDATAC
 		sspSend(0, (uint8_t *)&request, 1);
 		ssp0Deselect();
+*/
 
-
+		//for (n = 1; n < 20; n++) {
+		n=7;
+		for (j = 0; j < 1000; j++) {
+		// Attempt to read some registers
 		request[0] = 0x20 | 0x00; // RREG ID
-		//request[1] = 0x0A; // 10+1==11 registers
-		request[1] = 0x04; // 0+1==5 register
-		request[2] = 0x00;
-		request[3] = 0x00;
-		request[4] = 0x00;
-		request[5] = 0x00;
-		request[6] = 0x00;
+		request[1] = 0x04; // 5 register
 		ssp0Select();
-		//sspSend(0, (uint8_t *)&request, 2);
-		sspSend(0, (uint8_t *)&request, 7);
-		//sspReceive(0,(uint8_t *)&response, 5);
+		sspSend(0, (uint8_t *)&request, 2);
+		sspReceive(0,(uint8_t *)&response, n);
 		ssp0Deselect();
-
-		
-		for (i = 0; i < 5; i++) {
+	
+		for (i = 0; i < n; i++) {
 			printf ("%0x ",response[i]);
+			//if (response[i] == 0x3f) {
+			//	printf("\r\n");
+			//}
 		}
+
 		printf ("\r\n");
 		
-		delay();
-		delay();
+		delay(1024);
+		}
+		//}
+
 	}
 
 
  	 return 0;
 }
 
-void delay () {
+void delay (int n) {
 	int i;
-	for (i = 0; i < 4098; i++) {
+	for (i = 0; i < n; i++) {
 		__asm volatile ("NOP");
 	}
 }
