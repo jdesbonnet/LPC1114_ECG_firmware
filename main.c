@@ -52,6 +52,8 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+void register_write (uint8_t registerId, uint8_t registerValue);
+
 int main(void) {
 	int i,j,n;
 	systemInit();
@@ -85,6 +87,8 @@ int main(void) {
 		delay(512);
 
 
+
+
   	while (1) {
 
 
@@ -109,12 +113,14 @@ int main(void) {
 		ssp0Deselect();
 */
 
+	register_write (0x01, 0x03); // CONFIG1
+
 		//for (n = 1; n < 20; n++) {
 		n=7;
 		for (j = 0; j < 1000; j++) {
 		// Attempt to read some registers
 		request[0] = 0x20 | 0x00; // RREG ID
-		request[1] = 0x04; // 5 register
+		request[1] = 0x04; // n-1 registers
 		ssp0Select();
 		sspSend(0, (uint8_t *)&request, 2);
 		sspReceive(0,(uint8_t *)&response, n);
@@ -137,6 +143,18 @@ int main(void) {
 
 
  	 return 0;
+}
+
+void register_write (uint8_t registerId, uint8_t registerValue) {
+
+	uint8_t request[4];
+
+	request[0] = 0x40 | registerValue; // WREG
+	request[1] = 0x00; // n-1 registers
+	request[2] = registerValue;
+	ssp0Select();
+	sspSend(0, (uint8_t *)&request, 3);
+	ssp0Deselect();
 }
 
 void delay (int n) {
