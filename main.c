@@ -52,7 +52,8 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
-void register_write (uint8_t registerId, uint8_t registerValue);
+void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
+void ads1x9x_hw_reset (void);
 
 int main(void) {
 	int i,j,n;
@@ -73,11 +74,7 @@ int main(void) {
 		ssp0Deselect();
 
 
-		// Assert physical reset line
-		gpioSetValue (0,6,0);
-		delay(16);
-		gpioSetValue (0,6,1);
-		delay(512);
+
 
 		// Software reset
 		ssp0Select();
@@ -113,7 +110,7 @@ int main(void) {
 		ssp0Deselect();
 */
 
-	register_write (0x01, 0x03); // CONFIG1
+		ads1x9x_register_write (0x01, 0x83); // CONFIG1
 
 		//for (n = 1; n < 20; n++) {
 		n=7;
@@ -145,7 +142,7 @@ int main(void) {
  	 return 0;
 }
 
-void register_write (uint8_t registerId, uint8_t registerValue) {
+void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 
 	uint8_t request[4];
 
@@ -155,6 +152,13 @@ void register_write (uint8_t registerId, uint8_t registerValue) {
 	ssp0Select();
 	sspSend(0, (uint8_t *)&request, 3);
 	ssp0Deselect();
+}
+void ads1x9x_hw_reset (void) {
+	// Assert physical reset line
+	gpioSetValue (0,6,0);
+	delay(16);
+	gpioSetValue (0,6,1);
+	delay(512);
 }
 
 void delay (int n) {
