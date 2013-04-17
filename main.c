@@ -71,13 +71,12 @@ void ads1x9x_hw_reset (void);
 void delay(int delay);
 
 uint8_t ads1292r_default_register_settings[15] = {
+	0x00, //Device ID read Ony
+	0x02, //CONFIG1: SINGLE_SHOT=0 (continuous), 500sps
 
-	//Device ID read Ony
-	0x00,
-   	//CONFIG1
-	 0x02,
-    //CONFIG2
-     0xE0,
+// was E0
+	0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
+
     //LOFF
      0xF0,
 	 //CH1SET (PGA gain = 6)
@@ -124,28 +123,11 @@ int main(void) {
 
 
 
-		ssp0Select();
-		request[0] = 0x02; // WAKEUP
-		sspSend(0, (uint8_t *)&request, 1);
-		ssp0Deselect();
-
-
-
-
-		// Software reset
-		ssp0Select();
-		request[0] = 0x06; // RESET
-		sspSend(0, (uint8_t *)&request, 1);
-		ssp0Deselect();
-		delay(512);
-
-
-
-	for (i = 1; i < 12; i++) {
-		ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
-	}
 
   	while (1) {
+
+
+
 
 
 		// Assert physical reset line
@@ -182,21 +164,22 @@ int main(void) {
 		n=6;
 		for (j = 0; j < 1000; j++) {
 
-			ads1x9x_command (CMD_RESET);
-			delay(100);
+
+
+			// Observation: after a hard reset, DOUT is always 0.
+			ads1x9x_hw_reset();
+			delay(100000);
+			// CLKSEL tied high (internal ck)
+			for (i = 1; i < 12; i++) {
+				ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
+			}
 
 			// Attempt to read ID register
 			id = ads1x9x_register_read(REG_ID);
 			printf ("(%x) ", id);
-		
 
-		//request[0] = 0x20 | 0x00; // RREG ID
-		//request[1] = 0x04; // n-1 registers
-		//ssp0Select();
-		//sspSend(0, (uint8_t *)&request, 2);
-		//sspReceive(0,(uint8_t *)&response, n);
-		//ssp0Deselect();
-	
+
+		/*
 		ssp0Select();
 		sspReceive(0,(uint8_t *)&response, n);
 		ssp0Deselect();
@@ -205,7 +188,8 @@ int main(void) {
 		}
 
 		printf ("\r\n");
-		
+		*/
+
 		delay(1024);
 		}
 		//}
@@ -221,7 +205,9 @@ void ads1x9x_command (uint8_t command) {
 	request[0] = command;
 	ssp0Select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 1);
+	delay(32);
 	ssp0Deselect();
+	delay(32);
 }
 
 uint8_t ads1x9x_register_read (uint8_t registerId) {
@@ -231,7 +217,9 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	ssp0Select(); delay(1);
 	sspSend(0, (uint8_t *)&buf, 2);
 	sspReceive (0, (uint8_t *)&buf, 1);
+	delay(32);
 	ssp0Deselect();
+	delay(32);
 	return buf[0];
 }
 
@@ -242,7 +230,9 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 	request[2] = registerValue;
 	ssp0Select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 3);
+	delay(32);
 	ssp0Deselect();
+	delay(32);
 }
 
 void ads1x9x_hw_reset (void) {
