@@ -63,6 +63,8 @@
 #define CMD_RDATA (0x12)
 
 #define REG_ID (0x00)
+#define REG_CONFIG1 (0x01)
+#define REG_CONFIG2 (0x02)
 
 void ads1x9x_command (uint8_t command);
 uint8_t ads1x9x_register_read (uint8_t registerId);
@@ -183,14 +185,26 @@ int main(void) {
 			// Observation: after a hard reset, DOUT is always 0.
 			ads1x9x_hw_reset();
 			delay(100000);
+
+		ads1x9x_command (CMD_STOP);
+		ads1x9x_command (CMD_SDATAC);
+
 			// CLKSEL tied high (internal ck)
 			for (i = 1; i < 12; i++) {
 				ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
 			}
 			delay(512);
+
+			ads1x9x_command (CMD_STOP);
+			delay(512);
+
 			// Attempt to read ID register
-			id = ads1x9x_register_read(REG_ID);
-			printf ("(%x) ", id);
+			printf ("{");
+			for (i = 0; i < 12; i++) {
+				id = ads1x9x_register_read(i);
+				printf ("%x ", id);
+			}
+			printf ("}\r\n");
 
 
 		/*
@@ -228,7 +242,7 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	uint8_t buf[4];
 	buf[0] = 0x20 | registerId; // RREG
 	buf[1] = 0x00; // n-1 registers
-	ssp0Select(); delay(1);
+	ssp0Select(); delay(32);
 	sspSend(0, (uint8_t *)&buf, 2);
 	sspReceive (0, (uint8_t *)&buf, 1);
 	delay(32);
