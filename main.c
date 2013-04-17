@@ -72,29 +72,43 @@ void delay(int delay);
 
 uint8_t ads1292r_default_register_settings[15] = {
 	0x00, //Device ID read Ony
-	0x02, //CONFIG1: SINGLE_SHOT=0 (continuous), 500sps
 
-// was E0
+	// CONFIG1 (0x01)
+	//0x02, // SINGLE_SHOT=0 (continuous), 500sps
+	0x82, // SINGLE_SHOT=1 , 500sps
+
+
+	// CONFIG2 (0x02)
+	// was E0
 	0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
 
-    //LOFF
-     0xF0,
-	 //CH1SET (PGA gain = 6)
-     0x00,
-	 //CH2SET (PGA gain = 6)
-     0x00,
-	 //RLD_SENS (default)
-	 0x2C,
-	 //LOFF_SENS (default)
-	 0x0F,    
-    //LOFF_STAT
-     0x00,
-    //RESP1
-     0xEA,
-	//RESP2
-	 0x03,
+	// LOFF (0x03)
+     	0xF0,
+
+	//CH1SET (0x04) (PGA gain = 6)
+	0x00,
+
+	//CH2SET (0x05) (PGA gain = 6)
+	0x00,
+
+	//RLD_SENS (0x06) (default)
+	0x2C,
+
+	//LOFF_SENS (0x07) (default)
+	0x0F,    
+
+	//LOFF_STAT (0x08)
+ 	0x00,
+
+	//RESP1 (0x09)
+	0xEA,
+
+	//RESP2 (0x0a0)
+	0x03,
+
 	//GPIO
-     0x0C 
+	//0x0C // GPIOC2=INPUT, GPIOC1=INPUT
+	0x01 // GPIOC2=OUTPUT, GPIOC1=OUTPUT, GPIOD2=0, GPIOD1=1
 };
 
 
@@ -156,9 +170,9 @@ int main(void) {
 		//ads1x9x_register_write (0x01, 0x83); // CONFIG1
 
 		//ads1x9x_command (CMD_RDATAC);
-		ads1x9x_command (CMD_SDATAC);
-		ads1x9x_command (CMD_STOP);
-		ads1x9x_command (CMD_RESET);
+		//ads1x9x_command (CMD_SDATAC);
+		//ads1x9x_command (CMD_STOP);
+		//ads1x9x_command (CMD_RESET);
 
 		//for (n = 1; n < 20; n++) {
 		n=6;
@@ -173,7 +187,7 @@ int main(void) {
 			for (i = 1; i < 12; i++) {
 				ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
 			}
-
+			delay(512);
 			// Attempt to read ID register
 			id = ads1x9x_register_read(REG_ID);
 			printf ("(%x) ", id);
