@@ -52,8 +52,19 @@
 #define INPUT (0)
 #define OUTPUT (1)
 
+#define CMD_WAKEUP (0x02)
+#define CMD_STANDBY (0x04)
+#define CMD_RESET (0x06)
+#define CMD_START (0x08)
+#define CMD_STOP (0x0a)
+#define CMD_RDATAC (0x10)
+#define CMD_SDATAC (0x11)
+#define CMD_RDATA (0x12)
+
+void ads1x9x_command (uint8_t command);
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
+void delay(int delay);
 
 int main(void) {
 	int i,j,n;
@@ -110,7 +121,12 @@ int main(void) {
 		ssp0Deselect();
 */
 
-		ads1x9x_register_write (0x01, 0x83); // CONFIG1
+		// This seems to triger a new conversion. Why?
+		// START tied low.
+		//ads1x9x_register_write (0x01, 0x83); // CONFIG1
+
+		ads1x9x_command (CMD_RDATAC);
+		//ads1x9x_command (CMD_SDATAC);
 
 		//for (n = 1; n < 20; n++) {
 		n=7;
@@ -125,9 +141,6 @@ int main(void) {
 	
 		for (i = 0; i < n; i++) {
 			printf ("%0x ",response[i]);
-			//if (response[i] == 0x3f) {
-			//	printf("\r\n");
-			//}
 		}
 
 		printf ("\r\n");
@@ -142,10 +155,16 @@ int main(void) {
  	 return 0;
 }
 
-void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
-
+void ads1x9x_command (uint8_t command) {
 	uint8_t request[4];
+	request[0] = command;
+	ssp0Select();
+	sspSend(0, (uint8_t *)&request, 1);
+	ssp0Deselect();
+}
 
+void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
+	uint8_t request[4];
 	request[0] = 0x40 | registerValue; // WREG
 	request[1] = 0x00; // n-1 registers
 	request[2] = registerValue;
@@ -153,6 +172,7 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 	sspSend(0, (uint8_t *)&request, 3);
 	ssp0Deselect();
 }
+
 void ads1x9x_hw_reset (void) {
 	// Assert physical reset line
 	gpioSetValue (0,6,0);
