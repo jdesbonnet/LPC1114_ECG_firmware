@@ -42,6 +42,7 @@
 #include "core/pmu/pmu.h"
 #include "core/cpu/cpu.h"
 #include "core/ssp/ssp.h"
+#include "core/pwm/pwm.h"
 
 #include "lpc111x.h"
 
@@ -61,16 +62,60 @@
 #define CMD_SDATAC (0x11)
 #define CMD_RDATA (0x12)
 
+#define REG_ID (0x00)
+
 void ads1x9x_command (uint8_t command);
+uint8_t ads1x9x_register_read (uint8_t registerId);
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
 void delay(int delay);
 
+uint8_t ads1292r_default_register_settings[15] = {
+
+	//Device ID read Ony
+	0x00,
+   	//CONFIG1
+	 0x02,
+    //CONFIG2
+     0xE0,
+    //LOFF
+     0xF0,
+	 //CH1SET (PGA gain = 6)
+     0x00,
+	 //CH2SET (PGA gain = 6)
+     0x00,
+	 //RLD_SENS (default)
+	 0x2C,
+	 //LOFF_SENS (default)
+	 0x0F,    
+    //LOFF_STAT
+     0x00,
+    //RESP1
+     0xEA,
+	//RESP2
+	 0x03,
+	//GPIO
+     0x0C 
+};
+
+
+
 int main(void) {
 	int i,j,n;
+	int id;
 	systemInit();
 	uartInit(115200);
+
 	set_pins();
+
+
+	// Experiment set PIO1_9 as external clock. 500kHz, 50% duty cycle.
+	pwmInit();
+	pwmSetFrequencyInMicroseconds(2);
+	pwmSetDutyCycle(50);
+	pwmStart();
+
+
 
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 
@@ -96,6 +141,9 @@ int main(void) {
 
 
 
+	for (i = 1; i < 12; i++) {
+		ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
+	}
 
   	while (1) {
 
@@ -125,20 +173,33 @@ int main(void) {
 		// START tied low.
 		//ads1x9x_register_write (0x01, 0x83); // CONFIG1
 
-		ads1x9x_command (CMD_RDATAC);
-		//ads1x9x_command (CMD_SDATAC);
+		//ads1x9x_command (CMD_RDATAC);
+		ads1x9x_command (CMD_SDATAC);
+		ads1x9x_command (CMD_STOP);
+		ads1x9x_command (CMD_RESET);
 
 		//for (n = 1; n < 20; n++) {
-		n=7;
+		n=6;
 		for (j = 0; j < 1000; j++) {
-		// Attempt to read some registers
-		request[0] = 0x20 | 0x00; // RREG ID
-		request[1] = 0x04; // n-1 registers
+
+			ads1x9x_command (CMD_RESET);
+			delay(100);
+
+			// Attempt to read ID register
+			id = ads1x9x_register_read(REG_ID);
+			printf ("(%x) ", id);
+		
+
+		//request[0] = 0x20 | 0x00; // RREG ID
+		//request[1] = 0x04; // n-1 registers
+		//ssp0Select();
+		//sspSend(0, (uint8_t *)&request, 2);
+		//sspReceive(0,(uint8_t *)&response, n);
+		//ssp0Deselect();
+	
 		ssp0Select();
-		sspSend(0, (uint8_t *)&request, 2);
 		sspReceive(0,(uint8_t *)&response, n);
 		ssp0Deselect();
-	
 		for (i = 0; i < n; i++) {
 			printf ("%0x ",response[i]);
 		}
@@ -158,17 +219,28 @@ int main(void) {
 void ads1x9x_command (uint8_t command) {
 	uint8_t request[4];
 	request[0] = command;
-	ssp0Select();
+	ssp0Select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 1);
 	ssp0Deselect();
 }
 
+uint8_t ads1x9x_register_read (uint8_t registerId) {
+	uint8_t buf[4];
+	buf[0] = 0x20 | registerId; // RREG
+	buf[1] = 0x00; // n-1 registers
+	ssp0Select(); delay(1);
+	sspSend(0, (uint8_t *)&buf, 2);
+	sspReceive (0, (uint8_t *)&buf, 1);
+	ssp0Deselect();
+	return buf[0];
+}
+
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 	uint8_t request[4];
-	request[0] = 0x40 | registerValue; // WREG
+	request[0] = 0x40 | registerId; // WREG
 	request[1] = 0x00; // n-1 registers
 	request[2] = registerValue;
-	ssp0Select();
+	ssp0Select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 3);
 	ssp0Deselect();
 }
