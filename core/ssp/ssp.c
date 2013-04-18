@@ -187,8 +187,8 @@ void sspInit (uint8_t portNum, sspClockPolarity_t polarity, sspClockPhase_t phas
     SCB_SYSAHBCLKCTRL |= (SCB_SYSAHBCLKCTRL_SSP0);
   
     /* Divide by 2 (SSPCLKDIV also enables to SSP CLK) */
-    //SCB_SSP0CLKDIV = SCB_SSP0CLKDIV_DIV2;
-    SCB_SSP0CLKDIV = 8;
+    SCB_SSP0CLKDIV = SCB_SSP0CLKDIV_DIV2;
+    //SCB_SSP0CLKDIV = 8;
   
     /* Set P0.8 to SSP MISO */
     IOCON_PIO0_8 &= ~IOCON_PIO0_8_FUNC_MASK;
@@ -407,7 +407,8 @@ void sspReceive(uint8_t portNum, uint8_t *buf, uint32_t length)
     for ( i = 0; i < length; i++ )
     {
       /* As long as the receive FIFO is not empty, data can be received. */
-      SSP_SSP0DR = 0xFF;
+      //SSP_SSP0DR = 0xFF;
+      SSP_SSP0DR = 0x00; // ADS1292R data sheet says keep DIN to device low while reading
   
       /* Wait until the Busy bit is cleared */
       while ( (SSP_SSP0SR & (SSP_SSP0SR_BSY_BUSY|SSP_SSP0SR_RNE_NOTEMPTY)) != SSP_SSP0SR_RNE_NOTEMPTY );
