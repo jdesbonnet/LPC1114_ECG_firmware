@@ -75,7 +75,7 @@ void ads1x9x_hw_reset (void);
 void delay(int delay);
 
 #define ADS1x9x_DRDY_PORT (1)
-#define ADS1x9x_DRDY_PIN (0)
+#define ADS1x9x_DRDY_PIN (5)
 
 
 uint8_t ads1292r_default_register_settings[15] = {
@@ -153,10 +153,11 @@ int main(void) {
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
+//while (1) {
+//printf ("%x\r\n",gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN));
+//}
 
   	while (1) {
-
-
 
 		n=6;
 		for (j = 0; j < 1000; j++) {
@@ -201,10 +202,11 @@ delay(64);
 
 			// Wait for /DRDY
 	ssp0Select();
-			ads1x9x_drdy_wait(0);
+			id=ads1x9x_drdy_wait(0);
+			if (id==-1) {
+				printf ("TO");
+			}
 	ssp0Deselect(); 
-
-delay (2048);
 
 			// Read data by commandf
 			ads1x9x_command(CMD_RDATA);
@@ -241,9 +243,7 @@ delay (2048);
  * @return 0 /DRDY detected. -1 for timeout.
  */
 int ads1x9x_drdy_wait (int timeout) {
-	printf ("drdy=(%d)",gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN));
 	while (gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN) == 1)  {
-		delay(16);
 		if (timeout != 0) {
 			if ( (--timeout) == 0 ) {
 				// reached timeout
