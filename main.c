@@ -132,8 +132,8 @@ int main(void) {
 
 
 
-	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-
+	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge);
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
 
@@ -144,50 +144,16 @@ int main(void) {
 
 
 
-
-
-		// Assert physical reset line
-/*
-		gpioSetValue (0,6,0);
-		delay(16);
-		gpioSetValue (0,6,1);
-		delay(1024);
-*/
-
-
-/*
-		ssp0Select();
-		request[0] = 0x08; // START
-		sspSend(0, (uint8_t *)&request, 1);
-		ssp0Deselect();
-
-		ssp0Select();
-		request[0] = 0x10; // RDATAC
-		sspSend(0, (uint8_t *)&request, 1);
-		ssp0Deselect();
-*/
-
-		// This seems to triger a new conversion. Why?
-		// START tied low.
-		//ads1x9x_register_write (0x01, 0x83); // CONFIG1
-
-		//ads1x9x_command (CMD_RDATAC);
-		//ads1x9x_command (CMD_SDATAC);
-		//ads1x9x_command (CMD_STOP);
-		//ads1x9x_command (CMD_RESET);
-
-		//for (n = 1; n < 20; n++) {
 		n=6;
 		for (j = 0; j < 1000; j++) {
-
 
 
 			// Observation: after a hard reset, DOUT is always 0.
 			ads1x9x_hw_reset();
 			delay(100000);
 
-		ads1x9x_command (CMD_STOP);
-		ads1x9x_command (CMD_SDATAC);
+			ads1x9x_command (CMD_STOP);
+			ads1x9x_command (CMD_SDATAC);
 
 			// CLKSEL tied high (internal ck)
 			for (i = 1; i < 12; i++) {
@@ -207,20 +173,8 @@ int main(void) {
 			printf ("}\r\n");
 
 
-		/*
-		ssp0Select();
-		sspReceive(0,(uint8_t *)&response, n);
-		ssp0Deselect();
-		for (i = 0; i < n; i++) {
-			printf ("%0x ",response[i]);
-		}
-
-		printf ("\r\n");
-		*/
-
 		delay(1024);
 		}
-		//}
 
 	}
 
