@@ -133,18 +133,6 @@ int main(void) {
 
 	set_pins();
 
-
-	// Experiment set PIO1_9 as external clock. 500kHz, 50% duty cycle.
-	#ifdef PWM_EN
-	pwmInit();
-	pwmSetFrequencyInMicroseconds(2);
-	pwmSetDutyCycle(50);
-	pwmStart();
-	#endif
-
-
-
-
 	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge);
 	uint8_t request[SSP_FIFOSIZE];
@@ -153,10 +141,6 @@ int main(void) {
 
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
-
-//while (1) {
-//printf ("%x\r\n",gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN));
-//}
 
   	while (1) {
 
