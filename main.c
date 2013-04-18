@@ -67,6 +67,7 @@
 #define REG_CONFIG2 (0x02)
 
 void ads1x9x_command (uint8_t command);
+void ads1x9x_record_read (uint8_t registerId, uint8_t *buf);
 uint8_t ads1x9x_register_read (uint8_t registerId);
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
@@ -82,13 +83,15 @@ uint8_t ads1292r_default_register_settings[15] = {
 
 	// CONFIG2 (0x02)
 	// was E0
-	0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
+	//0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
+	0xCB, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1, int test
 
 	// LOFF (0x03)
      	0xF0,
 
 	//CH1SET (0x04) (PGA gain = 6)
-	0x00,
+	//0x00,
+	0x04, // MUX1=Temperature
 
 	//CH2SET (0x05) (PGA gain = 6)
 	0x00,
@@ -125,11 +128,12 @@ int main(void) {
 
 
 	// Experiment set PIO1_9 as external clock. 500kHz, 50% duty cycle.
+	#ifdef PWM_EN
 	pwmInit();
 	pwmSetFrequencyInMicroseconds(2);
 	pwmSetDutyCycle(50);
 	pwmStart();
-
+	#endif
 
 
 	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
@@ -152,7 +156,7 @@ int main(void) {
 			ads1x9x_hw_reset();
 			delay(100000);
 
-			ads1x9x_command (CMD_STOP);
+			//ads1x9x_command (CMD_STOP);
 			ads1x9x_command (CMD_SDATAC);
 
 			// CLKSEL tied high (internal ck)
@@ -172,8 +176,17 @@ int main(void) {
 			}
 			printf ("}\r\n");
 
+			delay (1024);
 
-		delay(1024);
+			// Read ECG record
+			ads1x9x_command (CMD_START);
+			for (i = 0; i < 4096; i++) {
+			}
+
+	
+			delay(4096);
+
+
 		}
 
 	}
@@ -203,6 +216,14 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	ssp0Deselect();
 	delay(32);
 	return buf[0];
+}
+
+void ads1x9x_record_read (uint8_t registerId, uint8_t *buf) {
+	ssp0Select(); delay(32);
+	sspReceive (0, (uint8_t *)buf, 12);
+	delay(32);
+	ssp0Deselect();
+	delay(32);
 }
 
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
