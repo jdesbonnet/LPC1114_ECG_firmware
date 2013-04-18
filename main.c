@@ -74,6 +74,7 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
 void delay(int delay);
 
+// Which port/pin is the /DRDY signal connected to?
 #define ADS1x9x_DRDY_PORT (1)
 #define ADS1x9x_DRDY_PIN (5)
 
@@ -240,6 +241,7 @@ delay(64);
  * Wait until /DRDY signal is asserted.
  *
  * @param timeout Timeout in iterations. 0 means no timeout.
+ *
  * @return 0 /DRDY detected. -1 for timeout.
  */
 int ads1x9x_drdy_wait (int timeout) {
@@ -254,6 +256,15 @@ int ads1x9x_drdy_wait (int timeout) {
 	return 0;
 }
 
+/**
+ * Issue ADS1x9x command.
+ *
+ * @param command Allowed commands are CMD_WAKEUP, CMD_STANDBY, CMD_RESET, 
+ * CMD_START, CMD_STOP,
+ * CMD_RDATAC, CMD_SDATAC, CMD_RDATA
+ * 
+ * @return void 
+ */
 void ads1x9x_command (uint8_t command) {
 	uint8_t request[4];
 	request[0] = command;
@@ -264,6 +275,9 @@ void ads1x9x_command (uint8_t command) {
 	delay(32);
 }
 
+/**
+ * Read the value of a ADS1x9x register.
+ */
 uint8_t ads1x9x_register_read (uint8_t registerId) {
 	uint8_t buf[4];
 	buf[0] = 0x20 | registerId; // RREG
@@ -277,6 +291,9 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	return buf[0];
 }
 
+/**
+ * Read one ECG record which comprises 3 x 24 bit (9 bytes).
+ */
 void ads1x9x_ecg_read (uint8_t *buf) {
 	ssp0Select(); delay(32);
 	sspReceive (0, (uint8_t *)buf, 9);
