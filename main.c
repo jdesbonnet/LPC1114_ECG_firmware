@@ -67,11 +67,16 @@
 #define REG_CONFIG2 (0x02)
 
 void ads1x9x_command (uint8_t command);
-void ads1x9x_record_read (uint8_t registerId, uint8_t *buf);
+void ads1x9x_ecg_read (uint8_t *buf);
+int ads1x9x_drdy_wait (int timeout);
 uint8_t ads1x9x_register_read (uint8_t registerId);
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
 void delay(int delay);
+
+#define ADS1x9x_DRDY_PORT (1)
+#define ADS1x9x_DRDY_PIN (0)
+
 
 uint8_t ads1292r_default_register_settings[15] = {
 	0x00, //Device ID read Ony
@@ -91,7 +96,7 @@ uint8_t ads1292r_default_register_settings[15] = {
 
 	//CH1SET (0x04) (PGA gain = 6)
 	//0x00,
-	0x04, // MUX1=Temperature
+	0x05, // MUX1=Test
 
 	//CH2SET (0x05) (PGA gain = 6)
 	0x00,
@@ -121,6 +126,7 @@ uint8_t ads1292r_default_register_settings[15] = {
 int main(void) {
 	int i,j,n;
 	int id;
+	uint8_t record[12];
 	systemInit();
 	uartInit(115200);
 
@@ -136,12 +142,16 @@ int main(void) {
 	#endif
 
 
+
+
 	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge);
 	uint8_t request[SSP_FIFOSIZE];
 	uint8_t response[SSP_FIFOSIZE];
 
 
+	// Configure the /DRDY monitoring pin for input
+	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
 
   	while (1) {
@@ -151,6 +161,12 @@ int main(void) {
 		n=6;
 		for (j = 0; j < 1000; j++) {
 
+
+// for debugging-- so we can see RST on scope using CS line
+ssp0Select();
+delay(64);
+ssp0Deselect();
+delay(64);
 
 			// Observation: after a hard reset, DOUT is always 0.
 			ads1x9x_hw_reset();
@@ -168,7 +184,7 @@ int main(void) {
 			ads1x9x_command (CMD_STOP);
 			delay(512);
 
-			// Attempt to read ID register
+			// Read all registers
 			printf ("{");
 			for (i = 0; i < 12; i++) {
 				id = ads1x9x_register_read(i);
@@ -180,8 +196,31 @@ int main(void) {
 
 			// Read ECG record
 			ads1x9x_command (CMD_START);
-			for (i = 0; i < 4096; i++) {
+
+
+
+			// Wait for /DRDY
+	ssp0Select();
+			ads1x9x_drdy_wait(0);
+	ssp0Deselect(); 
+
+delay (2048);
+
+			// Read data by commandf
+			ads1x9x_command(CMD_RDATA);
+
+
+
+
+			// Read ECG record
+			ads1x9x_ecg_read (&record);
+			// Display ECG record
+			printf ("[");
+			for (i = 0; i < 9; i++) {
+				printf ("%x ", record[i]);
 			}
+			printf ("]");
+			
 
 	
 			delay(4096);
@@ -193,6 +232,26 @@ int main(void) {
 
 
  	 return 0;
+}
+
+/**
+ * Wait until /DRDY signal is asserted.
+ *
+ * @param timeout Timeout in iterations. 0 means no timeout.
+ * @return 0 /DRDY detected. -1 for timeout.
+ */
+int ads1x9x_drdy_wait (int timeout) {
+	printf ("drdy=(%d)",gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN));
+	while (gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN) == 1)  {
+		delay(16);
+		if (timeout != 0) {
+			if ( (--timeout) == 0 ) {
+				// reached timeout
+				return -1;
+			}
+		} 
+	}
+	return 0;
 }
 
 void ads1x9x_command (uint8_t command) {
@@ -218,9 +277,9 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	return buf[0];
 }
 
-void ads1x9x_record_read (uint8_t registerId, uint8_t *buf) {
+void ads1x9x_ecg_read (uint8_t *buf) {
 	ssp0Select(); delay(32);
-	sspReceive (0, (uint8_t *)buf, 12);
+	sspReceive (0, (uint8_t *)buf, 9);
 	delay(32);
 	ssp0Deselect();
 	delay(32);
