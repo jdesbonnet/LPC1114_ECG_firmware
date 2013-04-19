@@ -50,33 +50,11 @@
   #include "core/cmd/cmd.h"
 #endif
 
+#include "ads1x9x.h"
+
 #define INPUT (0)
 #define OUTPUT (1)
 
-#define CMD_WAKEUP (0x02)
-#define CMD_STANDBY (0x04)
-#define CMD_RESET (0x06)
-#define CMD_START (0x08)
-#define CMD_STOP (0x0a)
-#define CMD_RDATAC (0x10)
-#define CMD_SDATAC (0x11)
-#define CMD_RDATA (0x12)
-
-#define REG_ID (0x00)
-#define REG_CONFIG1 (0x01)
-#define REG_CONFIG2 (0x02)
-
-void ads1x9x_command (uint8_t command);
-void ads1x9x_ecg_read (uint8_t *buf);
-int ads1x9x_drdy_wait (int timeout);
-uint8_t ads1x9x_register_read (uint8_t registerId);
-void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
-void ads1x9x_hw_reset (void);
-void delay(int delay);
-
-// Which port/pin is the /DRDY signal connected to?
-#define ADS1x9x_DRDY_PORT (1)
-#define ADS1x9x_DRDY_PIN (5)
 
 
 uint8_t ads1292r_default_register_settings[15] = {
@@ -142,10 +120,24 @@ int main(void) {
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
-  	while (1) {
 
-		n=6;
-		for (j = 0; j < 1000; j++) {
+	ads1x9x_hw_reset();
+	delay(100000);
+	//ads1x9x_command (CMD_STOP);
+	ads1x9x_command (CMD_SDATAC);
+
+	// CLKSEL tied high (internal ck)
+	for (i = 1; i < 12; i++) {
+		ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
+	}
+	delay(512);
+
+	while (1) {
+		cmdPoll();
+	}
+
+
+  	while (1) {
 
 
 // for debugging-- so we can see RST on scope using CS line
@@ -154,7 +146,7 @@ delay(64);
 ssp0Deselect();
 delay(64);
 
-			// Observation: after a hard reset, DOUT is always 0.
+
 			ads1x9x_hw_reset();
 			delay(100000);
 
@@ -209,11 +201,9 @@ delay(64);
 			printf ("]");
 			
 
-	
+			cmdPoll();
+
 			delay(4096);
-
-
-		}
 
 	}
 
@@ -221,90 +211,6 @@ delay(64);
  	 return 0;
 }
 
-/**
- * Wait until /DRDY signal is asserted.
- *
- * @param timeout Timeout in iterations. 0 means no timeout.
- *
- * @return 0 /DRDY detected. -1 for timeout.
- */
-int ads1x9x_drdy_wait (int timeout) {
-	while (gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN) == 1)  {
-		if (timeout != 0) {
-			if ( (--timeout) == 0 ) {
-				// reached timeout
-				return -1;
-			}
-		} 
-	}
-	return 0;
-}
-
-/**
- * Issue ADS1x9x command.
- *
- * @param command Allowed commands are CMD_WAKEUP, CMD_STANDBY, CMD_RESET, 
- * CMD_START, CMD_STOP,
- * CMD_RDATAC, CMD_SDATAC, CMD_RDATA
- * 
- * @return void 
- */
-void ads1x9x_command (uint8_t command) {
-	uint8_t request[4];
-	request[0] = command;
-	ssp0Select(); delay(1);
-	sspSend(0, (uint8_t *)&request, 1);
-	delay(32);
-	ssp0Deselect();
-	delay(32);
-}
-
-/**
- * Read the value of a ADS1x9x register.
- */
-uint8_t ads1x9x_register_read (uint8_t registerId) {
-	uint8_t buf[4];
-	buf[0] = 0x20 | registerId; // RREG
-	buf[1] = 0x00; // n-1 registers
-	ssp0Select(); delay(32);
-	sspSend(0, (uint8_t *)&buf, 2);
-	sspReceive (0, (uint8_t *)&buf, 1);
-	delay(32);
-	ssp0Deselect();
-	delay(32);
-	return buf[0];
-}
-
-/**
- * Read one ECG record which comprises 3 x 24 bit (9 bytes).
- */
-void ads1x9x_ecg_read (uint8_t *buf) {
-	ssp0Select(); delay(32);
-	sspReceive (0, (uint8_t *)buf, 9);
-	delay(32);
-	ssp0Deselect();
-	delay(32);
-}
-
-void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
-	uint8_t request[4];
-	request[0] = 0x40 | registerId; // WREG
-	request[1] = 0x00; // n-1 registers
-	request[2] = registerValue;
-	ssp0Select(); delay(1);
-	sspSend(0, (uint8_t *)&request, 3);
-	delay(32);
-	ssp0Deselect();
-	delay(32);
-}
-
-void ads1x9x_hw_reset (void) {
-	// Assert physical reset line
-	gpioSetValue (0,6,0);
-	delay(16);
-	gpioSetValue (0,6,1);
-	delay(512);
-}
 
 void delay (int n) {
 	int i;

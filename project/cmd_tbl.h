@@ -50,6 +50,9 @@ void cmd_help(uint8_t argc, char **argv);         // handled by core/cmd/cmd.c
 void cmd_sysinfo(uint8_t argc, char **argv);
 void cmd_reset(uint8_t argc, char **argv);
 
+void cmd_ads1x9x_reg_read_all(uint8_t argc, char **argv);
+
+
 #ifdef CFG_CHIBI
 void cmd_chibi_addr(uint8_t argc, char **argv);
 void cmd_chibi_ieeeaddr(uint8_t argc, char **argv);
@@ -88,6 +91,11 @@ cmd_t cmd_tbl[] =
   { "?",    0,  0,  0, cmd_help              , "Help"                           , CMD_NOPARAMS },
   { "V",    0,  0,  0, cmd_sysinfo           , "System Info"                    , CMD_NOPARAMS },
   { "Z",    0,  0,  0, cmd_reset             , "Reset"                          , CMD_NOPARAMS },
+
+	// ADS1x9x commands
+	{ "RREGA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
+
+
 
   #ifdef CFG_CHIBI
   { "A",    0,  1,  0, cmd_chibi_addr        , "Get/Set node address"           , "'A [<1-65534>|<OxFFFE>]'" },

@@ -40,6 +40,7 @@ VPATH += project/commands
 OBJS += cmd_chibi_addr.o cmd_chibi_tx.o cmd_deepsleep.o
 OBJS += cmd_i2ceeprom_read.o cmd_i2ceeprom_write.o cmd_lm75b_gettemp.o
 OBJS += cmd_sysinfo.o cmd_sd_dir.o cmd_reset.o
+OBJS += cmd_ads1x9x_reg_read_all.o
 
 ##########################################################################
 # Optional driver files 
@@ -97,6 +98,7 @@ VPATH += core/libc core/wdt core/pwm core/iap
 OBJS += adc.o cpu.o cmd.o gpio.o i2c.o pmu.o ssp.o systick.o timer16.o
 OBJS += timer32.o uart.o uart_buf.o stdio.o string.o wdt.o sysinit.o
 OBJS += pwm.o iap.o
+OBJS += ads1x9x.o
 
 ##########################################################################
 # GNU GCC compiler prefix and location
