@@ -48,6 +48,7 @@
     are using by enabling one of the following definitions. The code base
     will then try to configure itself accordingly for that board.
     -----------------------------------------------------------------------*/
+    #define CFG_BRD_ECG
     #define CFG_BRD_LPC1114_REFDESIGN
     // #define CFG_BRD_LPC1114_802154WIRELESS
 /*=========================================================================*/
@@ -498,6 +499,8 @@
                               CFG_PRINTF_UART or CFG_PRINTF_USBCDC are 
                               selected.
     -----------------------------------------------------------------------*/
+
+
     #ifdef CFG_BRD_LPC1114_REFDESIGN
       #define CFG_INTERFACE
       #define CFG_INTERFACE_MAXMSGSIZE    (256)
@@ -509,6 +512,13 @@
       #define CFG_INTERFACE_MAXMSGSIZE    (256)
       #define CFG_INTERFACE_PROMPT        "LPC1114 >> "
     #endif
+
+	#ifdef CFG_BRD_ECG
+		#define CFG_INTERFACE
+		#define CFG_INTERFACE_MAXMSGSIZE    (256)
+		#define CFG_INTERFACE_PROMPT        "ECG>> "
+	#endif
+
 /*=========================================================================*/
 
 

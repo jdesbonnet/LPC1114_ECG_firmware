@@ -53,6 +53,9 @@ void cmd_reset(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_read_all(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_write(uint8_t argc, char **argv);
+void cmd_ads1x9x_ecg_read(uint8_t argc, char **argv);
+void cmd_ads1x9x_ecg_readn(uint8_t argc, char **argv);
+void cmd_ads1x9x_ch_cfg(uint8_t argc, char **argv);
 
 #ifdef CFG_CHIBI
 void cmd_chibi_addr(uint8_t argc, char **argv);
@@ -94,9 +97,12 @@ cmd_t cmd_tbl[] =
   { "Z",    0,  0,  0, cmd_reset             , "Reset"                          , CMD_NOPARAMS },
 
 	// ADS1x9x commands
-	{ "RREGA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
-	{ "RREG",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
-	{ "WREG",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
+	{ "REGRA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
+	{ "REGR",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
+	{ "REGW",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
+	{ "ECGR",    0,  0,  0, cmd_ads1x9x_ecg_read             , "Read 1 ECG record"   , CMD_NOPARAMS },
+	{ "ECGRN",   1,  1,  0, cmd_ads1x9x_ecg_readn             , "Read n ECG records"   , "'ECGRN <n>'" },
+	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 
 
   #ifdef CFG_CHIBI
