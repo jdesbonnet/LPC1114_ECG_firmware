@@ -56,5 +56,6 @@ void cmdPoll();
 void cmdRx(uint8_t c);
 void cmdParse(char *cmd);
 void cmdInit();
-
+bool cmdIsEscape();
+void cmdResetEscape();
 #endif

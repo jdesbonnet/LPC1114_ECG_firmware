@@ -61,6 +61,8 @@
 static uint8_t msg[CFG_INTERFACE_MAXMSGSIZE];
 static uint8_t *msg_ptr;
 
+static bool cmd_escape_flag = false;
+
 /**************************************************************************/
 /*! 
     @brief  Polls the relevant incoming message queue to see if anything
@@ -117,6 +119,10 @@ void cmdRx(uint8_t c)
             msg_ptr--;
         }
         break;
+
+    case 0x1B:
+	cmd_escape_flag=1;
+	break;
 
     default:
         printf("%c", c);
@@ -245,3 +251,11 @@ void cmd_help(uint8_t argc, char **argv)
   
   printf("%sCommand parameters can be seen by entering: <command-name> ?%s", CFG_PRINTF_NEWLINE, CFG_PRINTF_NEWLINE);
 }
+
+bool cmdIsEscape() {
+	return cmd_escape_flag;
+}
+void cmdResetEscape() {
+	cmd_escape_flag=false;
+}
+
