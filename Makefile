@@ -100,6 +100,7 @@ OBJS += adc.o cpu.o cmd.o gpio.o i2c.o pmu.o ssp.o systick.o timer16.o
 OBJS += timer32.o uart.o uart_buf.o stdio.o string.o wdt.o sysinit.o
 OBJS += pwm.o iap.o
 OBJS += ads1x9x.o
+OBJS += stream_encode.o
 
 ##########################################################################
 # GNU GCC compiler prefix and location
