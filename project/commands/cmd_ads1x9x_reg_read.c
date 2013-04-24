@@ -7,6 +7,6 @@
 
 void cmd_ads1x9x_reg_read(uint8_t argc, char **argv)
 {
-	int regId = atoi(argv[0]);
+	int regId = parse_dec_or_hex(argv[0]);
 	printf ("%x\r\n", ads1x9x_register_read(regId));
 }
