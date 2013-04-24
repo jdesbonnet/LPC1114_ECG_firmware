@@ -58,48 +58,6 @@
 
 
 
-uint8_t ads1292r_default_register_settings[15] = {
-	0x00, //Device ID read Ony
-
-	// CONFIG1 (0x01)
-	//0x02, // SINGLE_SHOT=0 (continuous), 500sps
-	0x82, // SINGLE_SHOT=1 , 500sps
-
-
-	// CONFIG2 (0x02)
-	// was E0
-	//0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
-	0xCB, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1, int test
-
-	// LOFF (0x03)
-     	0xF0,
-
-	//CH1SET (0x04) (PGA gain = 6)
-	//0x00,
-	0x05, // MUX1=Test
-
-	//CH2SET (0x05) (PGA gain = 6)
-	0x00,
-
-	//RLD_SENS (0x06) (default)
-	0x2C,
-
-	//LOFF_SENS (0x07) (default)
-	0x0F,    
-
-	//LOFF_STAT (0x08)
- 	0x00,
-
-	//RESP1 (0x09)
-	0xEA,
-
-	//RESP2 (0x0a0)
-	0x03,
-
-	//GPIO
-	//0x0C // GPIOC2=INPUT, GPIOC1=INPUT
-	0x01 // GPIOC2=OUTPUT, GPIOC1=OUTPUT, GPIOD2=0, GPIOD1=1
-};
 
 
 
@@ -118,20 +76,13 @@ int main(void) {
 	uint8_t response[SSP_FIFOSIZE];
 
 
+	//printf ("ECG v0.1\r\n");
+
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
 
-	ads1x9x_hw_reset();
-	delay(100000);
-	//ads1x9x_command (CMD_STOP);
-	ads1x9x_command (CMD_SDATAC);
-
-	// CLKSEL tied high (internal ck)
-	for (i = 1; i < 12; i++) {
-		ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
-	}
-	delay(512);
+	ads1x9x_init();
 
 	while (1) {
 		cmdPoll();
@@ -147,18 +98,8 @@ delay(64);
 ssp0Deselect();
 delay(64);
 
+			ads1x9x_init();
 
-			ads1x9x_hw_reset();
-			delay(100000);
-
-			//ads1x9x_command (CMD_STOP);
-			ads1x9x_command (CMD_SDATAC);
-
-			// CLKSEL tied high (internal ck)
-			for (i = 1; i < 12; i++) {
-				ads1x9x_register_write (i,ads1292r_default_register_settings[i]);
-			}
-			delay(512);
 
 			ads1x9x_command (CMD_STOP);
 			delay(512);
@@ -283,27 +224,3 @@ void set_pins(void) {
 
 }
 
-uint32_t parse_hex (char *buf) {
-	int d,res=0;
-	while ( (d=is_hex_digit(*buf++)) != -1 ) {
-		res <<= 4;
-		res |= d;
-	}
-	return res;
-}
-
-/**
- * Return the numeric value of a hex digit or -1 if not a hex digit.
- */
-int is_hex_digit(char c) {
-	if (c>='0' && c<='9') {
-		return c - '0';
-	}
-	if (c>='a' && c<='f') {
-		return c - 'a' + 10;
-	}
-	if (c>='A' && c<='F') {
-		return c - 'A' + 10;
-	}
-	return -1;	
-}
