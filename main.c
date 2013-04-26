@@ -91,69 +91,7 @@ int main(void) {
 		cmdPoll();
 	}
 
-
-  	while (1) {
-
-
-// for debugging-- so we can see RST on scope using CS line
-ssp0Select();
-delay(64);
-ssp0Deselect();
-delay(64);
-
-			ads1x9x_init();
-
-
-			ads1x9x_command (CMD_STOP);
-			delay(512);
-
-			// Read all registers
-			printf ("{");
-			for (i = 0; i < 12; i++) {
-				id = ads1x9x_register_read(i);
-				printf ("%x ", id);
-			}
-			printf ("}\r\n");
-
-			delay (1024);
-
-			// Read ECG record
-			ads1x9x_command (CMD_START);
-
-
-
-			// Wait for /DRDY
-	ssp0Select();
-			id=ads1x9x_drdy_wait(0);
-			if (id==-1) {
-				printf ("TO");
-			}
-	ssp0Deselect(); 
-
-			// Read data by commandf
-			ads1x9x_command(CMD_RDATA);
-
-
-
-
-			// Read ECG record
-			ads1x9x_ecg_read (&record);
-			// Display ECG record
-			printf ("[");
-			for (i = 0; i < 9; i++) {
-				printf ("%x ", record[i]);
-			}
-			printf ("]");
-			
-
-			cmdPoll();
-
-			delay(4096);
-
-	}
-
-
- 	 return 0;
+ 	return 0;
 }
 
 
