@@ -52,17 +52,20 @@
 
 #include "ads1x9x.h"
 #include "parse_hex.h"
+#include "project/commands/cmd_ads1x9x.h"
 
 #define INPUT (0)
 #define OUTPUT (1)
 
 
 
+uint32_t cmd_ads1x9x_flags = 0;
 
+void set_pins(void);
 
 
 int main(void) {
-	int i,j,n;
+	int i;
 	int id;
 	uint8_t record[12];
 	systemInit();
@@ -72,8 +75,8 @@ int main(void) {
 
 	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge);
-	uint8_t request[SSP_FIFOSIZE];
-	uint8_t response[SSP_FIFOSIZE];
+	//uint8_t request[SSP_FIFOSIZE];
+	//uint8_t response[SSP_FIFOSIZE];
 
 
 	//printf ("ECG v0.1\r\n");

@@ -10,7 +10,7 @@
 
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
-	int i;
+	int i,status;
 	uint8_t buf[12];
 
 	bool binary_flag = false;
@@ -25,8 +25,6 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	int n = atoi (argv[0]);
 
-	ads1x9x_register_write (REG_CONFIG2, 0xA3);
-	ads1x9x_register_write (REG_CH2SET, 0x05);
 
 	while (n--) {
 
@@ -38,12 +36,18 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 		ads1x9x_ecg_read (&buf);
 
+		// Record comprises 24bit status + 2 x 24bit channel data
+		// Status is 1100 + LOFF_STAT[4:0] + GPIO[1:0] + 00000 0000 0000
+		status = ((buf[0]<<8 | buf[1])>>5)&0xff;
+
 		if (binary_flag) {
 			stream_write_start();
-			stream_write_bytes(buf,9);
+			stream_write_byte(0x01);
+			// Lead Off Status + GPIO
+			stream_write_byte(status);
+			stream_write_bytes(buf+3,6);
 		} else {
-
-			printf ("h=%x ", (buf[0]<<16 | buf[1]<<8 | buf[2]) );
+			printf ("s=%x ", status );
 			printf ("ch1=%x ", (buf[3]<<16 | buf[4]<<8 | buf[5]) );
 			printf ("ch2=%x ", (buf[6]<<16 | buf[7]<<8 | buf[8]) );
 			printf ("\r\n");
