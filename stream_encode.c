@@ -4,7 +4,7 @@
 #include "stream_encode.h"
 
 void stream_write_start (void) {
-	uartSendByte(STREAM_ESCAPE);
+	//uartSendByte(STREAM_ESCAPE);
 	uartSendByte(STREAM_START);
 }
 
@@ -13,6 +13,9 @@ void stream_write_byte (uint8_t b) {
 	if (b == STREAM_ESCAPE) {
 		uartSendByte (STREAM_ESCAPE);
 		uartSendByte (STREAM_ESCAPE ^ 0x20);
+	} else if (b == STREAM_START) {
+		uartSendByte (STREAM_ESCAPE);
+		uartSendByte (STREAM_START ^ 0x20);
 	} else {
 		uartSendByte (b);
 	}
