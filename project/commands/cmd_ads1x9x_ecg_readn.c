@@ -8,6 +8,8 @@
 #include "parse_hex.h"
 #include "stream_encode.h"
 
+#define SINGLE_SHOT_MODE
+
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
 	int i,status;
@@ -25,14 +27,32 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	int n = atoi (argv[0]);
 
+	#ifdef SINGLE_SHOT_MODE
+	// SINGLE_SHOT=1, 500SPS
+	//ads1x9x_register_write(REG_CONFIG1, 0x82);
+	#else
+	// SINGLE_SHOT=0, 500SPS
+	//ads1x9x_reg_write(REG_CONFIG1, 0x02);
+	//ads1x9x_command(CMD_RDATAC);
+	#endif
+
+
 
 	while (n--) {
 
+		#ifdef SINGLE_SHOT_MODE
+		// Issue command to start data conversion
 		ads1x9x_command(CMD_START);
+		#endif
 
+
+		// Wait for data available
 		ads1x9x_drdy_wait(0);
 
-		ads1x9x_command(CMD_RDATA); 
+		#ifdef SINGLE_SHOT_MODE
+		// Issue command to read ECG data
+		ads1x9x_command(CMD_RDATA);
+		#endif
 
 		ads1x9x_ecg_read (&buf);
 
@@ -42,7 +62,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 		if (binary_flag) {
 			stream_write_start();
-			stream_write_byte(0x01);
+			stream_write_byte(0x01); // ECG record frame
 			// Lead Off Status + GPIO
 			stream_write_byte(status);
 			stream_write_bytes(buf+3,6);
@@ -55,6 +75,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 		cmdPoll();
 
+		// Check for ESC from host
 		if (cmdIsEscape()) {
 			cmdResetEscape();
 			printf ("\r\nESCAPE\r\n");
@@ -62,5 +83,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		}
 
 	}
+
+	#ifndef SINGLE_SHOT_MODE
+	//ads1x9x_command(CMD_SDATAC);
+	#endif
 
 }

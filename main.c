@@ -87,6 +87,8 @@ int main(void) {
 
 	ads1x9x_init();
 
+	//ads1x9x_command (CMD_SDATAC);
+
 	while (1) {
 		cmdPoll();
 	}
