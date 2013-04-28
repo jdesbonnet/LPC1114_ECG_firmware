@@ -60,6 +60,7 @@ void cmd_ads1x9x_temp_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_set(uint8_t argc, char **argv);
 void cmd_ads1x9x_sleep(uint8_t argc, char **argv);
 void cmd_ads1x9x_wake(uint8_t argc, char **argv);
+void cmd_ads1x9x_cmd(uint8_t argc, char **argv);
 
 #ifdef CFG_CHIBI
 void cmd_chibi_addr(uint8_t argc, char **argv);
@@ -104,6 +105,7 @@ cmd_t cmd_tbl[] =
 	{ "REGRA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
 	{ "REGR",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
 	{ "REGW",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
+	{ "CMD",    1,  1,  0, cmd_ads1x9x_cmd             , "Issue ADS1x9x command"   , "'CMD <cmd>'" },
 	{ "SET",    1,  2,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
 	{ "ECGR",    0,  0,  0, cmd_ads1x9x_ecg_read             , "Read 1 ECG record"   , CMD_NOPARAMS },
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read n ECG records"   , "'ECGRN <n>'" },
