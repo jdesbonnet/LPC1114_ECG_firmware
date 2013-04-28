@@ -7,6 +7,7 @@
 #define CMD_RESET (0x06)
 #define CMD_START (0x08)
 #define CMD_STOP (0x0a)
+#define CMD_OFFSETCAL (0x1a)
 #define CMD_RDATAC (0x10)
 #define CMD_SDATAC (0x11)
 #define CMD_RDATA (0x12)
