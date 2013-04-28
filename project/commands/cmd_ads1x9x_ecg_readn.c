@@ -47,7 +47,11 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 
 		// Wait for data available
-		ads1x9x_drdy_wait(0);
+		status = ads1x9x_drdy_wait(1000000);
+		if (status != 0) {
+			printf ("TIMEOUT\r\n");
+			break;
+		}
 
 		#ifdef SINGLE_SHOT_MODE
 		// Issue command to read ECG data
