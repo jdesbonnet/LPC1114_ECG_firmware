@@ -58,8 +58,6 @@ void cmd_ads1x9x_ecg_readn(uint8_t argc, char **argv);
 void cmd_ads1x9x_ch_cfg(uint8_t argc, char **argv);
 void cmd_ads1x9x_temp_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_set(uint8_t argc, char **argv);
-void cmd_ads1x9x_sleep(uint8_t argc, char **argv);
-void cmd_ads1x9x_wake(uint8_t argc, char **argv);
 void cmd_ads1x9x_cmd(uint8_t argc, char **argv);
 
 #ifdef CFG_CHIBI
@@ -111,8 +109,6 @@ cmd_t cmd_tbl[] =
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read n ECG records"   , "'ECGRN <n>'" },
 	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 	{ "TEMP",    0,  0,  0, cmd_ads1x9x_temp_read, "Read temperature", CMD_NOPARAMS },
-	{ "SLEEP",    0,  0,  0, cmd_ads1x9x_sleep, "Enter standby mode", CMD_NOPARAMS },
-	{ "WAKE",    0,  0,  0, cmd_ads1x9x_wake, "Wake from standby mode", CMD_NOPARAMS },
 
 
   #ifdef CFG_CHIBI
