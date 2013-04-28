@@ -8,7 +8,7 @@
 #include "parse_hex.h"
 #include "stream_encode.h"
 
-#define SINGLE_SHOT_MODE
+//#define SINGLE_SHOT_MODE
 
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
@@ -32,8 +32,8 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	//ads1x9x_register_write(REG_CONFIG1, 0x82);
 	#else
 	// SINGLE_SHOT=0, 500SPS
-	//ads1x9x_reg_write(REG_CONFIG1, 0x02);
-	//ads1x9x_command(CMD_RDATAC);
+	ads1x9x_reg_write(REG_CONFIG1, 0x02);
+	ads1x9x_command(CMD_RDATAC);
 	#endif
 
 
