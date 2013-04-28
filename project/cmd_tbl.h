@@ -103,7 +103,7 @@ cmd_t cmd_tbl[] =
 	{ "REGRA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
 	{ "REGR",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
 	{ "REGW",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
-	{ "CMD",    1,  1,  0, cmd_ads1x9x_cmd             , "Issue ADS1x9x command"   , "'CMD <cmd>'" },
+	{ "CMD",    1,  1,  0, cmd_ads1x9x_cmd             , "Issue ADS1x9x command"   , "'CMD <WAKEUP|STANDBY|RESET|START|STOP|OFFSETCAL|RDATAC|SDATAC|RDATA>'" },
 	{ "SET",    1,  2,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
 	{ "ECGR",    0,  0,  0, cmd_ads1x9x_ecg_read             , "Read 1 ECG record"   , CMD_NOPARAMS },
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read n ECG records"   , "'ECGRN <n>'" },
