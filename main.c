@@ -93,6 +93,13 @@ int main(void) {
 	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge); // works for ADS1x9x
 	ads1x9x_init();
 
+	// Test ADS1x9x
+	if ( ads1x9x_test() != 0) {
+		printf ("ERROR: ADS1x9x fail\r\n");
+	} else {
+		printf ("ADS1x9x success\r\n");
+	}
+
 
 	while (1) {
 		cmdPoll();

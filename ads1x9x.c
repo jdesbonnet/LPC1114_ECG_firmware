@@ -49,6 +49,14 @@ uint8_t ads1292r_default_register_settings[15] = {
 };
 
 
+void ads1x9x_select(void) {
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge); // works for ADS1x9x
+	ssp0Select();
+}
+
+void ads1x9x_deselect(void) {
+	ssp0Deselect();
+}
 
 
 /**
@@ -82,10 +90,10 @@ int ads1x9x_drdy_wait (int timeout) {
 void ads1x9x_command (uint8_t command) {
 	uint8_t request[4];
 	request[0] = command;
-	ssp0Select(); delay(1);
+	ads1x9x_select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 1);
 	delay(32);
-	ssp0Deselect();
+	ads1x9x_deselect();
 	delay(32);
 }
 
@@ -97,7 +105,7 @@ uint8_t ads1x9x_register_read (uint8_t registerId) {
 	uint8_t buf[4];
 	buf[0] = 0x20 | registerId; // RREG
 	buf[1] = 0x00; // n-1 registers
-	ssp0Select(); delay(32);
+	ads1x9x_select(); delay(32);
 	sspSend(0, (uint8_t *)&buf, 2);
 	sspReceive (0, (uint8_t *)&buf, 1);
 	delay(32);
@@ -114,7 +122,7 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 	request[0] = 0x40 | registerId; // WREG
 	request[1] = 0x00; // n-1 registers
 	request[2] = registerValue;
-	ssp0Select(); delay(1);
+	ads1x9x_select(); delay(1);
 	sspSend(0, (uint8_t *)&request, 3);
 	delay(32);
 	ssp0Deselect();
@@ -125,7 +133,7 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
  * Read one ECG record which comprises 3 x 24 bit (9 bytes).
  */
 void ads1x9x_ecg_read (uint8_t *buf) {
-	ssp0Select(); delay(32);
+	ads1x9x_select(); delay(32);
 	sspReceive (0, (uint8_t *)buf, 9);
 	delay(32);
 	ssp0Deselect();
@@ -167,3 +175,6 @@ void ads1x9x_init (void) {
 	delay(512);
 }
 
+int ads1x9x_test(void) {
+	return (ads1x9x_register_read (REG_ID) == 0x53) ? 0 : -1;
+}
