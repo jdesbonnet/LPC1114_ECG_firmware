@@ -73,37 +73,14 @@ int main(void) {
 
 	set_pins();
 
-	//sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
-	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge);
-	//uint8_t request[SSP_FIFOSIZE];
-	//uint8_t response[SSP_FIFOSIZE];
 
 
-	//printf ("ECG v0.1\r\n");
 
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
 	// Configure PIO0_3: /CS line for SRAM
 	gpioSetDir(0,3,OUTPUT);
-
-/*
-	gpioSetDir(0,4,OUTPUT);
-	gpioSetDir(0,7,OUTPUT);
-
-	for (i = 0; i < (1<<24); i++) {
-		//sram_select();
-		//sram_deselect();
-		gpioSetValue(0,3,1);
-		gpioSetValue(0,4,1);
-		gpioSetValue(0,7,1);
-		gpioSetValue(0,3,0);
-		gpioSetValue(0,4,0);
-		gpioSetValue(0,7,0);
-	}
-*/
-
-	ads1x9x_init();
 
 
 	// Test SRAM
@@ -112,6 +89,9 @@ int main(void) {
 	} else {
 		printf ("SRAM success\r\n");
 	}
+
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge); // works for ADS1x9x
+	ads1x9x_init();
 
 
 	while (1) {

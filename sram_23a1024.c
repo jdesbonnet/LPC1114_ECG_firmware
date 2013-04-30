@@ -3,12 +3,15 @@
 #include <stdint.h>
 
 #include "core/gpio/gpio.h"
+#include "core/ssp/ssp.h"
 
 #include "sram_23a1024.h"
 
 void sram_select(void) {
 	// Assert SRAM /CS line
 	gpioSetValue(0,3,0);
+	// Clock phase is different to ADS1x9x device, so set on each select.
+	sspInit(0, sspClockPolarity_Low, sspClockPhase_RisingEdge);
 }
 void sram_deselect(void) {
 	gpioSetValue(0,3,1);
@@ -84,6 +87,7 @@ int sram_test (void) {
 	sram_deselect();
 
 	if (response[0] != 0x55) {
+		printf ("SRAM test fail: expecting 0x55, got %d\r\n", response[0]);
 		return -1;
 	}
 

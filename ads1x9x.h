@@ -19,6 +19,7 @@
 #define REG_CH2SET (0x05)
 
 void ads1x9x_init(void);
+int ads1x9x_test(void);
 void ads1x9x_command (uint8_t command);
 void ads1x9x_ecg_read (uint8_t *buf);
 int ads1x9x_drdy_wait (int timeout);
