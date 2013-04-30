@@ -41,7 +41,8 @@ OBJS += cmd_chibi_addr.o cmd_chibi_tx.o cmd_deepsleep.o
 OBJS += cmd_i2ceeprom_read.o cmd_i2ceeprom_write.o cmd_lm75b_gettemp.o
 OBJS += cmd_sysinfo.o cmd_sd_dir.o cmd_reset.o
 
-OBJS += cmd_ads1x9x_reg_read.o cmd_ads1x9x_reg_read_all.o cmd_ads1x9x_reg_write.o
+OBJS += cmd_ads1x9x_reg_read.o  cmd_ads1x9x_reg_write.o
+#OBJS += cmd_ads1x9x_reg_read_all.o
 OBJS += cmd_ads1x9x_cmd.o
 OBJS += cmd_ads1x9x_ecg_readn.o 
 OBJS += cmd_ads1x9x_ecg_playback.o

@@ -50,7 +50,7 @@ void cmd_help(uint8_t argc, char **argv);         // handled by core/cmd/cmd.c
 void cmd_sysinfo(uint8_t argc, char **argv);
 void cmd_reset(uint8_t argc, char **argv);
 
-void cmd_ads1x9x_reg_read_all(uint8_t argc, char **argv);
+//void cmd_ads1x9x_reg_read_all(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_write(uint8_t argc, char **argv);
 void cmd_ads1x9x_ecg_readn(uint8_t argc, char **argv);
@@ -100,7 +100,7 @@ cmd_t cmd_tbl[] =
   { "Z",    0,  0,  0, cmd_reset             , "Reset"                          , CMD_NOPARAMS },
 
 	// ADS1x9x commands
-	{ "REGRA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
+	//{ "REGRA",    0,  0,  0, cmd_ads1x9x_reg_read_all             , "Read all registers"   , CMD_NOPARAMS },
 	{ "REGR",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
 	{ "REGW",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
 	{ "CMD",    1,  1,  0, cmd_ads1x9x_cmd             , "Issue ADS1x9x command"   , "'CMD <WAKEUP|STANDBY|RESET|START|STOP|OFFSETCAL|RDATAC|SDATAC|RDATA>'" },
