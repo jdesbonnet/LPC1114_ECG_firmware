@@ -84,6 +84,24 @@ int main(void) {
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
+	// Configure PIO0_3: /CS line for SRAM
+	gpioSetDir(0,3,OUTPUT);
+
+/*
+	gpioSetDir(0,4,OUTPUT);
+	gpioSetDir(0,7,OUTPUT);
+
+	for (i = 0; i < (1<<24); i++) {
+		//sram_select();
+		//sram_deselect();
+		gpioSetValue(0,3,1);
+		gpioSetValue(0,4,1);
+		gpioSetValue(0,7,1);
+		gpioSetValue(0,3,0);
+		gpioSetValue(0,4,0);
+		gpioSetValue(0,7,0);
+	}
+*/
 
 	ads1x9x_init();
 

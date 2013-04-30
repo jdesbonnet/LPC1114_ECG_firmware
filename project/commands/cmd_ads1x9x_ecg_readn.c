@@ -20,6 +20,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	int recordIndex=1,status;
 	uint8_t buf[12];
 
+	uint32_t i;
 	uint32_t n = atoi (argv[0]);
 
 	char outputFormat = argv[1][0];
@@ -37,6 +38,11 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	// Write number of records to SRAM
 	if (outputFormat == STORE_TO_SRAM) {
 		sram_record_write(0,&n,sizeof(n));
+		// Read back to verify write
+		sram_record_read(0,&i,sizeof(n));
+		if (i != n) {
+			printf ("ERROR: write to SRAM failed verify test, expected %d, but got %d\r\n", n, i);
+		}
 	}
 
 	while (n--) {
@@ -83,11 +89,14 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 			case STORE_TO_SRAM:
 			// Format SRAM record in buf[]
+			delay(1000);
 			buf[1] = 0x00;
 			buf[2] = status;
 			sram_record_write(recordIndex*8,buf+1,8);
+			recordIndex++;
 			break;
 		}
+
 
 		cmdPoll();
 

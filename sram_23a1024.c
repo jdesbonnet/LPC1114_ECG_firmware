@@ -8,10 +8,10 @@
 
 void sram_select(void) {
 	// Assert SRAM /CS line
-	gpioSetValue(1,3,0);
+	gpioSetValue(0,3,0);
 }
 void sram_deselect(void) {
-	gpioSetValue(1,3,0);
+	gpioSetValue(0,3,1);
 }
 
 void sram_record_write (uint32_t base_addr, uint8_t *buf, uint32_t record_size) {
@@ -46,7 +46,11 @@ void sram_record_read (uint32_t base_addr, uint8_t *buf, uint32_t record_size) {
 
 int sram_test (void) {
 
-	#ifdef SRAM_23LC1024
+	//#ifdef SRAM_23LC1024
+
+	int i,j;
+	uint8_t request[8];
+	uint8_t response[8];
 
 	// 
 	// Test byte mode read/write
@@ -56,7 +60,6 @@ int sram_test (void) {
 	sram_select();
 	request[0] = 0x01;  // WRMR command
 	request[1] = 0x00; // Byte mode
-	gpioSetValue(1,8,1);
 	sspSend(0, (uint8_t *)&request, 2);
 	sram_deselect();
 
@@ -80,7 +83,6 @@ int sram_test (void) {
 	sspReceive (0, (uint8_t *)&response, 1);
 	sram_deselect();
 
-	printf ("Memory test:\n ");
 	if (response[0] != 0x55) {
 		return -1;
 	}
@@ -129,8 +131,9 @@ int sram_test (void) {
 		return -1;
 	}
 
-	#endif
+	//#endif
 
+	// SUCCESS
 	return 0;
 	
 }
