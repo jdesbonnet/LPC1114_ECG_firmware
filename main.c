@@ -87,7 +87,14 @@ int main(void) {
 
 	ads1x9x_init();
 
-	//ads1x9x_command (CMD_SDATAC);
+
+	// Test SRAM
+	if ( sram_test() != 0) {
+		printf ("ERROR: SRAM fail\r\n");
+	} else {
+		printf ("SRAM success\r\n");
+	}
+
 
 	while (1) {
 		cmdPoll();

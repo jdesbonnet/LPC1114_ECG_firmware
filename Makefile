@@ -105,6 +105,7 @@ OBJS += pwm.o iap.o
 OBJS += ads1x9x.o
 OBJS += stream_encode.o
 OBJS += parse_hex.o
+OBJS += sram_23a1024.o
 
 ##########################################################################
 # GNU GCC compiler prefix and location
