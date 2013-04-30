@@ -26,7 +26,7 @@ void sram_record_write (uint32_t base_addr, uint8_t *buf, uint32_t record_size) 
 	// Write record to memory
 	sspSend(0, buf, record_size);
 
-	sramDeselect();
+	sram_deselect();
 }
 
 void sram_record_read (uint32_t base_addr, uint8_t *buf, uint32_t record_size) {
@@ -41,7 +41,7 @@ void sram_record_read (uint32_t base_addr, uint8_t *buf, uint32_t record_size) {
 
 	sspReceive (0, buf, record_size);
 
-	sramDeselect();
+	sram_deselect();
 }
 
 int sram_test (void) {
@@ -53,32 +53,32 @@ int sram_test (void) {
 	//
 
 	// Set byte mode
-	sramSelect();
+	sram_select();
 	request[0] = 0x01;  // WRMR command
 	request[1] = 0x00; // Byte mode
 	gpioSetValue(1,8,1);
 	sspSend(0, (uint8_t *)&request, 2);
-	sramDeselect();
+	sram_deselect();
 
 	// Test by writing to memory
-	sramSelect();
+	sram_select();
 	request[0] = 0x02;  // write command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
 	request[4] = 0x55;
 	sspSend(0, (uint8_t *)&request, 5);
-	sramDeselect();
+	sram_deselect();
 
 	// Read it back
-	sramSelect();
+	sram_select();
 	request[0] = 0x03;  // read command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
 	request[3] = 0x00;  //
 	sspSend(0, (uint8_t *)&request, 4);
 	sspReceive (0, (uint8_t *)&response, 1);
-	sramDeselect();
+	sram_deselect();
 
 	printf ("Memory test:\n ");
 	if (response[0] != 0x55) {
@@ -90,15 +90,15 @@ int sram_test (void) {
 	//
 
 	// Set sequential mode
-	sramSelect();
+	sram_select();
 	request[0] = 0x01; // WRMR command
 	request[1] = 0x40; // Sequential mode
 	sspSend(0, (uint8_t *)&request, 2);
-	sramDeselect();
+	sram_deselect();
 
 
 	// Write to memory
-	sramSelect();
+	sram_select();
 	request[0] = 0x02;  // write command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
@@ -110,10 +110,10 @@ int sram_test (void) {
 		sspSend(0, (uint8_t *)&request, 1);
 		j += i;
 	}
-	sramDeselect();
+	sram_deselect();
 
 	// Read back	
-	sramSelect();
+	sram_select();
 	request[0] = 0x03;  // read command
 	request[1] = 0x00;  // addr 0x000000
 	request[2] = 0x00;  //
@@ -124,7 +124,7 @@ int sram_test (void) {
 		sspReceive(0, (uint8_t *)&response, 1);
 		j -= i;
 	}
-	sramDeselect();
+	sram_deselect();
 	if (j!=0) {
 		return -1;
 	}

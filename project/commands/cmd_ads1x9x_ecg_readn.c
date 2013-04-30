@@ -7,25 +7,22 @@
 #include "ads1x9x.h"
 #include "parse_hex.h"
 #include "stream_encode.h"
+#include "sram_23a1024.h"
 
 //#define SINGLE_SHOT_MODE
 
+#define OUTPUT_BINARY  ('B')
+#define OUTPUT_TEXT  ('A')
+#define STORE_TO_SRAM  ('S')
+
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
-	int i,status;
+	int recordIndex=1,status;
 	uint8_t buf[12];
 
-	bool binary_flag = false;
+	uint32_t n = atoi (argv[0]);
 
-	for (i = 0; i < argc; i++) {
-		if (argv[i][0] == '-') {
-			if (argv[i][1]=='b') {
-				binary_flag = true;
-			}
-		}
-	}
-
-	int n = atoi (argv[0]);
+	char outputFormat = argv[1][0];
 
 	#ifdef SINGLE_SHOT_MODE
 	// SINGLE_SHOT=1, 500SPS
@@ -37,6 +34,10 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	#endif
 
 
+	// Write number of records to SRAM
+	if (outputFormat == STORE_TO_SRAM) {
+		sram_record_write(0,&n,sizeof(n));
+	}
 
 	while (n--) {
 
@@ -64,17 +65,28 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		// Status is 1100 + LOFF_STAT[4:0] + GPIO[1:0] + 00000 0000 0000
 		status = ((buf[0]<<8 | buf[1])>>5)&0xff;
 
-		if (binary_flag) {
+		switch (outputFormat) {
+			case OUTPUT_BINARY:
 			stream_write_start();
 			stream_write_byte(0x01); // ECG record frame
 			// Lead Off Status + GPIO
 			stream_write_byte(status);
 			stream_write_bytes(buf+3,6);
-		} else {
+			break;
+
+			case OUTPUT_TEXT:
 			printf ("s=%x ", status );
 			printf ("ch1=%x ", (buf[3]<<16 | buf[4]<<8 | buf[5]) );
 			printf ("ch2=%x ", (buf[6]<<16 | buf[7]<<8 | buf[8]) );
 			printf ("\r\n");
+			break;
+
+			case STORE_TO_SRAM:
+			// Format SRAM record in buf[]
+			buf[1] = 0x00;
+			buf[2] = status;
+			sram_record_write(recordIndex*8,buf+1,8);
+			break;
 		}
 
 		cmdPoll();
@@ -87,6 +99,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		}
 
 	}
+
 
 	#ifndef SINGLE_SHOT_MODE
 	//ads1x9x_command(CMD_SDATAC);
