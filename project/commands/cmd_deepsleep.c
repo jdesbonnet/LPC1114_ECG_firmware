@@ -59,7 +59,12 @@ void cmd_deepsleep(uint8_t argc, char **argv)
   // is used for lowest possible power consumption and because it requires
   // no external components, but it only has +-/40% accuracy
   printf("Entering Deep Sleep mode for 10 seconds%s", CFG_PRINTF_NEWLINE);
+
+set_pins_low_power();
+
   pmuDeepSleep(10);
+
+configure_pins();
 
   // On wakeup, the WAKEUP interrupt will be fired, which is handled
   // by WAKEUP_IRQHandler in 'core/pmu/pmu.c'.  This will set the CPU

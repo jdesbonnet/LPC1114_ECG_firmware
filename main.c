@@ -61,7 +61,8 @@
 
 uint32_t cmd_ads1x9x_flags = 0;
 
-void set_pins(void);
+void set_pins_low_power(void);
+void configure_pins(void);
 
 
 int main(void) {
@@ -69,19 +70,8 @@ int main(void) {
 	int id;
 	uint8_t record[12];
 	systemInit();
-	uartInit(115200);
 
-	set_pins();
-
-
-
-
-	// Configure the /DRDY monitoring pin for input
-	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
-
-	// Configure PIO0_3: /CS line for SRAM
-	gpioSetDir(0,3,OUTPUT);
-
+	configure_pins();
 
 	// Test SRAM
 	if ( sram_test() != 0) {
@@ -90,7 +80,7 @@ int main(void) {
 		printf ("SRAM success\r\n");
 	}
 
-	sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge); // works for ADS1x9x
+	//sspInit(0, sspClockPolarity_Low, sspClockPhase_FallingEdge); // works for ADS1x9x
 	ads1x9x_init();
 
 	// Test ADS1x9x
@@ -116,7 +106,22 @@ void delay (int n) {
 	}
 }
 
-void set_pins(void) {
+void configure_pins (void) {
+
+	// Unless otherwise needed, set pins so that min current used
+	set_pins_low_power();
+
+	uartInit(9600);
+
+	// Configure the /DRDY monitoring pin for input
+	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
+
+	// Configure PIO0_3: /CS line for SRAM
+	gpioSetDir(0,3,OUTPUT);
+}
+
+
+void set_pins_low_power(void) {
 
 	int i;
 	// http://knowledgebase.nxp.com/showthread.php?t=187
@@ -157,8 +162,8 @@ void set_pins(void) {
 	IOCON_SWDIO_PIO1_3 = IOCON_SWDIO_PIO1_3_FUNC_GPIO;
 	IOCON_PIO1_4 = IOCON_PIO1_4_FUNC_GPIO;
 	IOCON_PIO1_5 = IOCON_PIO1_5_FUNC_GPIO;
-	//IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // UART
-	//IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // UART
+	IOCON_PIO1_6 = IOCON_PIO1_6_FUNC_GPIO; // UART
+	IOCON_PIO1_7 = IOCON_PIO1_7_FUNC_GPIO; // UART
 	IOCON_PIO1_8 = IOCON_PIO1_8_FUNC_GPIO;
 	IOCON_PIO1_9 = IOCON_PIO1_9_FUNC_GPIO;
 	IOCON_PIO1_10 = IOCON_PIO1_10_FUNC_GPIO;
