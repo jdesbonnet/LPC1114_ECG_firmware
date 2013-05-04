@@ -129,7 +129,7 @@ cmd_t cmd_tbl[] =
   { "d",    0,  1,  0,  cmd_sd_dir           , "Dir (SD Card)"                  , "'d [<path>]'" },
   #endif
 
-  { "z",    0,  0,  0,  cmd_deepsleep        , "Deep sleep for ~10 seconds"     , CMD_NOPARAMS },
+  { "z",    0,  1,  0,  cmd_deepsleep        , "Deep sleep"     , "'z [<nsec>]'" },
 };
 
 #endif
