@@ -41,6 +41,25 @@
 #include "sysdefs.h"
 
 /*=========================================================================
+
+Configuration specific to the ECG application:
+
+ -----------------------------------------------------------------------*/
+#define LED1_PORT (1)
+#define LED1_PIN (4)
+
+#define SRAM_CS_PORT (0)
+#define SRAM_CS_PIN (3)
+
+#define ADS1x9x_DRDY_PORT (1)
+#define ADS1x9x_DRDY_PIN (5)
+
+void setLED(int ledNumber, int state);
+void configure_pins(void);
+void set_pins_low_power(void);
+
+
+/*=========================================================================
     BOARD SELECTION
 
     Because several boards use this code library with sometimes slightly
@@ -155,17 +174,7 @@
 /*=========================================================================*/
 
 
-/*=========================================================================
-    ADS1x9x settings
-    -----------------------------------------------------------------------
 
-
-    -----------------------------------------------------------------------*/
-
-// Which port/pin is the /DRDY signal connected to?
-#define ADS1x9x_DRDY_PORT (1)
-#define ADS1x9x_DRDY_PIN (5)
-/*=========================================================================*/
 
 
 /*=========================================================================

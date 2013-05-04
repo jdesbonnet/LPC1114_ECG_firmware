@@ -61,9 +61,6 @@
 
 uint32_t cmd_ads1x9x_flags = 0;
 
-void set_pins_low_power(void);
-void configure_pins(void);
-
 
 int main(void) {
 	int i;
@@ -72,6 +69,8 @@ int main(void) {
 	systemInit();
 
 	configure_pins();
+
+	setLED(1,1);
 
 	// Test SRAM
 	if ( sram_test() != 0) {
@@ -90,6 +89,7 @@ int main(void) {
 		printf ("ADS1x9x success\r\n");
 	}
 
+	setLED(1,0);
 
 	while (1) {
 		cmdPoll();
@@ -106,6 +106,20 @@ void delay (int n) {
 	}
 }
 
+/**
+ * Set state of UI LED 
+ * @param ledNumber The UI LED number (currently ignored)
+ * @param state 1 for on, 0 for off.
+ */
+
+void setLED (int ledNumber, int state) {
+	// Have only one, so ignore ledNumber
+	gpioSetValue(LED1_PORT,LED1_PIN, state);
+}
+
+/**
+ * Configure pins for active operation. Called at boot or after deep sleep wake.
+ */
 void configure_pins (void) {
 
 	// Unless otherwise needed, set pins so that min current used
@@ -117,10 +131,16 @@ void configure_pins (void) {
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
 
 	// Configure PIO0_3: /CS line for SRAM
-	gpioSetDir(0,3,OUTPUT);
+	gpioSetDir(SRAM_CS_PORT,SRAM_CS_PIN,OUTPUT);
+
+	// LED1
+	gpioSetDir(LED1_PORT,LED1_PIN,OUTPUT);
 }
 
 
+/**
+ * Configure pins for minimal current use during deep sleep.
+ */
 void set_pins_low_power(void) {
 
 	int i;
