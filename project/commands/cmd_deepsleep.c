@@ -43,6 +43,8 @@
 #include "commands.h"
 
 #include "core/pmu/pmu.h"
+#include "parse_hex.h"
+#include "ads1x9x.h"
 
 /**************************************************************************/
 /*! 
@@ -58,13 +60,22 @@ void cmd_deepsleep(uint8_t argc, char **argv)
   // Note that the exact delay is variable since the internal WDT oscillator
   // is used for lowest possible power consumption and because it requires
   // no external components, but it only has +-/40% accuracy
-  printf("Entering Deep Sleep mode for 10 seconds%s", CFG_PRINTF_NEWLINE);
 
-set_pins_low_power();
+	int sleepTimeSeconds = 10;
+	if (argc>=1) {
+		sleepTimeSeconds = parse_dec_or_hex(argv[0]);
+	}
+  printf("Entering Deep Sleep mode for %d seconds%s", sleepTimeSeconds, CFG_PRINTF_NEWLINE);
 
-  pmuDeepSleep(10);
+	// Put ADS1x9x IC in low power standby mode
+	ads1x9x_command(CMD_STANDBY);
 
-configure_pins();
+	set_pins_low_power();
+
+	pmuDeepSleep(10);
+
+	// Configure pins for operational use now that awake again
+	configure_pins();
 
   // On wakeup, the WAKEUP interrupt will be fired, which is handled
   // by WAKEUP_IRQHandler in 'core/pmu/pmu.c'.  This will set the CPU
