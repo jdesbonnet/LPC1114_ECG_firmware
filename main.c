@@ -202,5 +202,7 @@ void set_pins_low_power(void) {
 		gpioSetValue (1,i,1); // this seems to make no difference
 	}
 
+	// Consider powering LED by sinking current rather than sourcing.
+	setLED(1,0);
 }
 
