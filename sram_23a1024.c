@@ -1,5 +1,13 @@
-/* */
 
+/**************************************************************************/
+/*! 
+    @file     sram_23a1024.c
+    @author   Joe Desbonnet, jdesbonnet@gmail.com
+
+    @brief    Code load/store from Microchip 23A1024, 23LC1024
+
+*/
+/**************************************************************************/
 #include <stdint.h>
 
 #include "core/gpio/gpio.h"
