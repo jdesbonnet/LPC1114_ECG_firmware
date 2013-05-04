@@ -25,6 +25,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	char outputFormat = argv[1][0];
 
+	// UI LED on
+	setLED(1,1);
+
 	#ifdef SINGLE_SHOT_MODE
 	// SINGLE_SHOT=1, 500SPS
 	//ads1x9x_register_write(REG_CONFIG1, 0x82);
@@ -88,8 +91,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			break;
 
 			case STORE_TO_SRAM:
-			// Format SRAM record in buf[]
-			delay(1000);
+			// Format SRAM record in buf[]. Rather than move stuff
+			// around position the header next to the data (hence
+			// buf+1)
 			buf[1] = 0x00;
 			buf[2] = status;
 			sram_record_write(recordIndex*8,buf+1,8);
@@ -107,11 +111,16 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			break;
 		}
 
+
+
 	}
 
 
 	#ifndef SINGLE_SHOT_MODE
 	//ads1x9x_command(CMD_SDATAC);
 	#endif
+
+	// UI LED off
+	setLED(1,0);
 
 }
