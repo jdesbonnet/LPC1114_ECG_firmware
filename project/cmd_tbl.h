@@ -59,6 +59,7 @@ void cmd_ads1x9x_ch_cfg(uint8_t argc, char **argv);
 void cmd_ads1x9x_temp_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_set(uint8_t argc, char **argv);
 void cmd_ads1x9x_cmd(uint8_t argc, char **argv);
+void cmd_ads1x9x_test(uint8_t argc, char **argv);
 
 #ifdef CFG_CHIBI
 void cmd_chibi_addr(uint8_t argc, char **argv);
@@ -109,6 +110,7 @@ cmd_t cmd_tbl[] =
 	{ "ECGP",   1,  2,  0, cmd_ads1x9x_ecg_playback             , "Playback ECG from SRAM"   , "'ECGP <A|B>'" },
 	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 	{ "TEMP",    0,  0,  0, cmd_ads1x9x_temp_read, "Read temperature", CMD_NOPARAMS },
+	{ "TEST",    0,  0,  0, cmd_ads1x9x_test, "Test ADS1x9x", CMD_NOPARAMS },
 
 
   #ifdef CFG_CHIBI

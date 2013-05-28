@@ -47,7 +47,9 @@ OBJS += cmd_ads1x9x_cmd.o
 OBJS += cmd_ads1x9x_ecg_readn.o 
 OBJS += cmd_ads1x9x_ecg_playback.o
 OBJS += cmd_ads1x9x_temp_read.o
-OBJS += cmd_ads1x9x_ch_cfg.o cmd_ads1x9x_set.o
+OBJS += cmd_ads1x9x_ch_cfg.o 
+OBJS += cmd_ads1x9x_set.o
+OBJS += cmd_ads1x9x_test.o
 
 ##########################################################################
 # Optional driver files 
