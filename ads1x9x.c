@@ -45,7 +45,8 @@ uint8_t ads1292r_default_register_settings[15] = {
 	0xEA,
 
 	//RESP2 (0x0a0)
-	0x03,
+	//0x03,
+	0x83,
 
 	//GPIO
 	0x0C // GPIOC2=INPUT, GPIOC1=INPUT
@@ -212,7 +213,7 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 
 	ads1x9x_command (CMD_RDATAC);
 
-	if ( ads1x9x_drdy_wait (10000) == -1 ) {
+	if ( ads1x9x_drdy_wait (100000) == -1 ) {
 		printf ("ERROR 1\n");
 		return;
 	}
@@ -273,7 +274,7 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 	// high and low level of test signal.
 	for (i = 0; i < 500; i++) {
 		if ( ads1x9x_drdy_wait (10000) == -1 ) {
-			printf ("ERROR 1\n");
+			printf ("ERROR 2\n");
 			return;
 		}
 
