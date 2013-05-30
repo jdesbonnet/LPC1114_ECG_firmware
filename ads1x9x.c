@@ -27,12 +27,13 @@ uint8_t ads1292r_default_register_settings[15] = {
 	0x10, // PGA gain = 1
 
 	//CH2SET (0x05) (PGA gain = 6)
-	//0x00,
-	0x80, // disable ch
+	0x00,
+	//0x80, // disable ch
 
 	//RLD_SENS (0x06) (default)
 	// PDB_RLD=1, RLD_LOFF_SENS=0, RLD2N=1, RLD2P=1, RLD1N=0, RLD1P=0
-	0x2C,
+	//0x2C,
+	0x20,
 
 
 	//LOFF_SENS (0x07) (default)
@@ -184,11 +185,32 @@ int ads1x9x_test(void) {
 	return (ads1x9x_register_read (REG_ID) == 0x53) ? 0 : -1;
 }
 
-void ads1x9x_measure_test_signal (int pga_gain) {
+/**
+ * Return bit mask for PGA gain (needs to be <<4). Allowed
+ * gain values: 1-4,6,8,12.
+ */
+int ads1x9x_get_pga_bits(int pga_gain) {
+	switch (pga_gain) {
+		case 1: 
+		case 2: 
+		case 3:
+		case 4: 
+			return pga_gain;
+			break;
+		case 6: 
+			return 0;
+			break;
+		case 8:
+			return 5;
+			break;
+		case 12:
+			return 6;
+			break;
+	}
+	return 0;
+}
 
-	uint8_t buf[9];
-
-	printf ("PGA Gain %d\r\n", pga_gain);
+void ads1x9x_measure_shorted (int pga_gain) {
 
 	// Stop continuous data to allow register read.
 	ads1x9x_command (CMD_SDATAC);
@@ -208,62 +230,66 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 	ads1x9x_register_write (REG_CONFIG1, 0x02);
 
 	// Set channels to input short
-	ads1x9x_register_write (REG_CH1SET, 0x01);
-	ads1x9x_register_write (REG_CH2SET, 0x01);
+	int pga_bits = ads1x9x_get_pga_bits(pga_gain);
+	ads1x9x_register_write (REG_CH1SET, 0x01 |  (pga_bits<<4));
+	ads1x9x_register_write (REG_CH2SET, 0x01 |  (pga_bits<<4));
+
+	uint8_t buf[9];
+
+	int32_t adc[2] = {0,0};
+	int64_t adc_sum[2] = {0,0};
+
+	int i, j;
 
 	ads1x9x_command (CMD_RDATAC);
 
-	if ( ads1x9x_drdy_wait (100000) == -1 ) {
-		printf ("ERROR 1\n");
-		return;
+	for (i = 0; i < SPS; i++) {
+		ads1x9x_ecg_read (buf);
+		adc[CH1] = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
+		adc[CH2] = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
+		for (j = 0; j < 2; j++) {
+			adc_sum[j] += adc[j];
+		}
 	}
-
-
-	ads1x9x_ecg_read (buf);
 
 	ads1x9x_command (CMD_SDATAC);
 
-	// Display ECG record
-	print_ecg_record (buf);
+	printf ("short_ch1=%d shorted_ch2=%d\r\n", 
+		(adc_sum[CH1]/SPS) , (adc_sum[CH2]/SPS) 
+	);
+
+}
+
+
+
+void ads1x9x_measure_test_signal (int pga_gain) {
+
+	int32_t adc[2] = {0,0};
+	int64_t adc_sum[2] = {0,0};
+	int32_t adc_min[2] = {0,0};
+	int32_t adc_max[2] = {0,0};
+	int32_t adc_midpoint[2] = {0,0};
+
+	uint8_t buf[9];
+
+	ads1x9x_command (CMD_SDATAC);
 
 	// Activate a 1mV x Vref/2.4 square wave test signal
 	ads1x9x_register_write(REG_CONFIG2, 0xA3);
 
-	int pga_bits = 0;
-	switch (pga_gain) {
-		case 1: 
-		case 2: 
-		case 3:
-		case 4: 
-			pga_bits = pga_gain;
-			break;
-		case 6: 
-			pga_bits = 0;
-			break;
-		case 8:
-			pga_bits = 5;
-			break;
-		case 12:
-			pga_bits = 6;
-			break;
-	}
-
+	int pga_bits = ads1x9x_get_pga_bits(pga_gain);
 	ads1x9x_register_write(REG_CH1SET, 0x05 | (pga_bits<<4));
 	ads1x9x_register_write(REG_CH2SET, 0x05 | (pga_bits<<4));
 
 	ads1x9x_command (CMD_RDATAC);
 
 
+	int i,j;
 
-
-
-	int i;
-	int32_t ch1,ch2;
-	int64_t ch1_sum=0, ch2_sum=0;
-	int32_t min_ch1 = (1<<24);
-	int32_t max_ch1 = -(1<<24);
-	int32_t min_ch2 = (1<<24);
-	int32_t max_ch2 = -(1<<24);
+	for (j = 0; j < 2; j++) {
+		adc_min[j] = (1<<24);
+		adc_max[j] = -(1<<24);
+	}
 
 //24 bits per data channel in binary twos complement format, MSB first.
 // LSB has weight of Vref / (1<<23 - 1).
@@ -272,96 +298,101 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 
 	// Analyze one cycle of test signal to find mid point between
 	// high and low level of test signal.
-	for (i = 0; i < 500; i++) {
+	for (i = 0; i < SPS; i++) {
 		if ( ads1x9x_drdy_wait (10000) == -1 ) {
 			printf ("ERROR 2\n");
 			return;
 		}
 
 		ads1x9x_ecg_read (buf);
-		ch1 = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
-		ch2 = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
+		adc[CH1] = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
+		adc[CH2] = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
 
-
-		ch1_sum += ch1;
-		ch2_sum += ch2;
-
-		if (ch1 > max_ch1) {
-			max_ch1 = ch1;
-		}
-		if (ch1 < min_ch1) {
-			min_ch1 = ch1;
-		}
-		if (ch2 > max_ch2) {
-			max_ch2 = ch2;
-		}
-		if (ch2 < min_ch2) {
-			min_ch2 = ch2;
+		for (j = 0; j < 2; j++) {
+			adc_sum[j] += adc[j];
+			if (adc[j] > adc_max[j]) {
+				adc_max[j] = adc[j];
+			}
+			if (adc[j] < adc_min[j]) {
+				adc_min[j] = adc[j];
+			}
 		}
 		
 	}
 
-	int32_t ch1_mean = (uint32_t)(ch1_sum/500);
-	int32_t ch2_mean = (uint32_t)(ch2_sum/500);
-
-
-	printf ("min_ch1=%d max_ch1=%d range=%d mean=%d\r\n", min_ch1, max_ch1, (max_ch1-min_ch1), ch1_mean );
-	printf ("min_ch2=%d max_ch2=%d range=%d mean=%d\r\n", min_ch2, max_ch2, (max_ch2-min_ch2), ch2_mean );
+	for (j = 0; j < 2; j++) {
+		adc_midpoint[j] = adc_sum[j] / SPS;
+		printf ("CH%d %d / %d / %d range=%d\r\n", 
+			(j+1),
+			adc_min[j], adc_midpoint[j], adc_max[j], 
+			adc_max[j]-adc_min[j]
+		);
+	}
 
 	//
 	// Now use the mid-point to get a mean of the high and low signal levels.
 	//
-	int32_t ch1_low=0;
-	int32_t ch1_high=0;
-	int32_t ch2_low=0;
-	int32_t ch2_high=0;
 
-	int ch1_low_count=0;
-	int ch1_high_count=0;
-	int ch2_low_count=0;
-	int ch2_high_count=0;
+	int32_t low_sum[2] = {0,0};
+	int32_t high_sum[2] = {0,0};
+	int32_t low_sum_count[2] = {0,0};
+	int32_t high_sum_count[2] = {0,0};
+	int64_t low_sum2[2] = {0,0};
+	int64_t high_sum2[2] = {0,0};
 
-	for (i = 0; i < 500; i++) {
+
+
+	for (i = 0; i < SPS; i++) {
 		if ( ads1x9x_drdy_wait (10000) == -1 ) {
 			printf ("ERROR 1\n");
 			return;
 		}
 
 		ads1x9x_ecg_read (buf);
-		ch1 = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
-		ch2 = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
+		adc[CH1] = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
+		adc[CH2] = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
 
-		if (ch1 >= ch1_mean) {
-			ch1_high+= ch1;
-			ch1_high_count++;
+		for (j = 0; j < 2; j++) {
+			if (adc[j] >= adc_midpoint[j]) {
+				high_sum[j] += adc[j];
+				high_sum2[j] += adc[j]*adc[j];
+				high_sum_count[j]++;
+			}
+			if (adc[j] < adc_midpoint[j]) {
+				low_sum[j] += adc[j];
+				low_sum2[j] += adc[j]*adc[j];
+				low_sum_count[j]++;
+			}
 		}
-		if (ch1 < ch1_mean) {
-			ch1_low += ch1;
-			ch1_low_count++;
-		}
-
-		if (ch2 >= ch2_mean) {
-			ch2_high+= ch2;
-			ch2_high_count++;
-		}
-		if (ch2 < ch2_mean) {
-			ch2_low += ch2;
-			ch2_low_count++;
-		}
-
 	}
 
-	int32_t ch1_low_mean = ch1_low/ch1_low_count;
-	int32_t ch1_high_mean = ch1_high/ch1_high_count;
-	int32_t ch2_low_mean = ch2_low/ch2_low_count;
-	int32_t ch2_high_mean = ch2_high/ch2_high_count;
+	// sigma2 = (1/(N-1)) * ( sumOfSquares - sum*sum / N)
 
-	printf ("ch1_low_mean=%d ch1_low_count=%d\r\n", ch1_low_mean, ch1_low_count);
-	printf ("ch1_high_mean=%d ch1_high_count=%d\r\n", ch1_high_mean, ch1_high_count);
-	printf ("ch2_low_mean=%d ch2_low_count=%d\r\n", ch2_low_mean, ch2_low_count);
-	printf ("ch2_high_mean=%d ch2_high_count=%d\r\n", ch2_high_mean, ch2_high_count);
-	printf ("ch1_range=%d\r\n", (ch1_high_mean - ch1_low_mean));
-	printf ("ch2_range=%d\r\n", (ch2_high_mean - ch2_low_mean));
-	printf ("ch1_adc_per_V=%d\r\n", (1000*(ch1_high_mean - ch1_low_mean))/ 2016);
-	printf ("ch2_adc_per_V=%d\r\n", (1000*(ch2_high_mean - ch2_low_mean))/ 2016);
+	int32_t low_mean, high_mean, low_var, high_var, adc_per_v;
+	int64_t sum2;
+	//float low_sd,high_sd;
+	for (j = 0; j < 2; j++) {
+		low_mean = low_sum[j]/low_sum_count[j];
+		high_mean = high_sum[j]/high_sum_count[j];
+		sum2 = (int64_t)low_sum[j]*(int64_t)low_sum[j];
+		low_var = (low_sum2[j] - sum2/(int64_t)low_sum_count[j])/((int64_t)low_sum_count[j]-1);
+		sum2 = (int64_t)high_sum[j]*(int64_t)high_sum[j];
+		high_var = (high_sum2[j] - sum2/(int64_t)high_sum_count[j])/((int64_t)high_sum_count[j]-1);
+		adc_per_v =  (1000*(high_mean - low_mean))/ 2016 ;
+
+		//low_sd = sqrtf((float)low_var);
+		//high_sd = sqrtf((float)high_var);
+
+		printf ("CH%d %d (%d) -> %d (%d) range=%d var=%d (%d) / %d (%d) adc/V=%d\r\n", 
+			(j+1),
+			low_mean, low_sum_count[j], 
+			high_mean, high_sum_count[j], 
+			(high_mean - low_mean), 
+			//low_var, (int)low_sd, high_var, (int)high_sd,
+			low_var, high_var,
+			adc_per_v
+		);
+	}
+
+
 }

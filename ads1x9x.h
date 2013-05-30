@@ -18,6 +18,10 @@
 #define REG_CH1SET (0x04)
 #define REG_CH2SET (0x05)
 
+#define CH1 (0)
+#define CH2 (1)
+#define SPS (500)
+
 void ads1x9x_init(void);
 int ads1x9x_test(void);
 void ads1x9x_command (uint8_t command);
@@ -26,6 +30,7 @@ int ads1x9x_drdy_wait (int timeout);
 uint8_t ads1x9x_register_read (uint8_t registerId);
 void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue);
 void ads1x9x_hw_reset (void);
+void ads1x9x_measure_shorted (int pga_gain);
 void delay(int delay);
 
 #endif
