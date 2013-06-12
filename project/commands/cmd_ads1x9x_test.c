@@ -9,11 +9,17 @@
 
 void cmd_ads1x9x_test(uint8_t argc, char **argv)
 {
-	int pga_gain,j;
-	for (pga_gain = 1; pga_gain < 5; pga_gain++) {
+	int pga_gain,i,j;
+
+	// PGA gains to run the test for
+	int test_gains[] = {1,4,8};
+
+	for (i = 0; i < 3; i++) {
+		pga_gain = test_gains[i];
 
 		printf ("PGA Gain %d\r\n", pga_gain);
-		for (j = 0; j < 5; j++) {
+		for (j = 0; j < 3; j++) {
+			printf ("Iter %d: ", j);
 			ads1x9x_measure_shorted(pga_gain);
 		}
 		ads1x9x_measure_test_signal(pga_gain); 
@@ -22,7 +28,8 @@ void cmd_ads1x9x_test(uint8_t argc, char **argv)
 		ads1x9x_command(CMD_OFFSETCAL); 
 		delay(2000000);
 
-		for (j = 0; j < 5; j++) {
+		for (j = 0; j < 3; j++) {
+			printf ("Iter %d: ", j);
 			ads1x9x_measure_shorted(pga_gain);
 		}
 

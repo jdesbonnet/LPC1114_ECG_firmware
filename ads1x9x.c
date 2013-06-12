@@ -27,7 +27,7 @@ uint8_t ads1292r_default_register_settings[15] = {
 	0x10, // PGA gain = 1
 
 	//CH2SET (0x05) (PGA gain = 6)
-	0x00,
+	0x10,
 	//0x80, // disable ch
 
 	//RLD_SENS (0x06) (default)
@@ -254,7 +254,8 @@ void ads1x9x_measure_shorted (int pga_gain) {
 
 	ads1x9x_command (CMD_SDATAC);
 
-	printf ("short_ch1=%d shorted_ch2=%d\r\n", 
+	printf ("Short (mean of %d samples): ", SPS);
+	printf ("ch1=%d ch2=%d\r\n", 
 		(adc_sum[CH1]/SPS) , (adc_sum[CH2]/SPS) 
 	);
 
@@ -380,16 +381,11 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 		high_var = (high_sum2[j] - sum2/(int64_t)high_sum_count[j])/((int64_t)high_sum_count[j]-1);
 		adc_per_v =  (1000*(high_mean - low_mean))/ 2016 ;
 
-		//low_sd = sqrtf((float)low_var);
-		//high_sd = sqrtf((float)high_var);
-
-		printf ("CH%d %d (%d) -> %d (%d) range=%d var=%d (%d) / %d (%d) adc/V=%d\r\n", 
+		printf ("Test Signal on CH%d low=%d (%d samples, var=%d) high=%d (%d samples, var=%d) range=%d adc/V=%d\r\n", 
 			(j+1),
-			low_mean, low_sum_count[j], 
-			high_mean, high_sum_count[j], 
+			low_mean, low_sum_count[j], low_var,
+			high_mean, high_sum_count[j], high_var,
 			(high_mean - low_mean), 
-			//low_var, (int)low_sd, high_var, (int)high_sd,
-			low_var, high_var,
 			adc_per_v
 		);
 	}
