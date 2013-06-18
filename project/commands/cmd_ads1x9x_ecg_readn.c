@@ -14,7 +14,7 @@
 #define OUTPUT_BINARY  ('B')
 #define OUTPUT_TEXT  ('A')
 #define STORE_TO_SRAM  ('S')
-#define ASCII_CHART ('C')
+#define OUTPUT_ASCII_CHART ('C')
 
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
@@ -32,14 +32,6 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	// UI LED on
 	setLED(1,1);
 
-	#ifdef SINGLE_SHOT_MODE
-	// SINGLE_SHOT=1, 500SPS
-	//ads1x9x_register_write(REG_CONFIG1, 0x82);
-	#else
-	// SINGLE_SHOT=0, 500SPS
-	ads1x9x_register_write(REG_CONFIG1, 0x02);
-	ads1x9x_command(CMD_RDATAC);
-	#endif
 
 
 	// Write number of records to SRAM
@@ -52,12 +44,27 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		}
 	}
 
+
+	bool singleShotMode=false;
+	switch (outputFormat) {
+		case OUTPUT_TEXT:
+		//case OUTPUT_ASCII_CHART:
+		singleShotMode = true;
+	}
+
+	// Write to CONFIG1 to set single shot or continuous mode. 500sps in both cases.
+	ads1x9x_register_write(REG_CONFIG1, singleShotMode ? 0x12 : 0x02);
+
+	if ( ! singleShotMode) {
+		ads1x9x_command(CMD_RDATAC);
+	}
+
 	while (n--) {
 
-		#ifdef SINGLE_SHOT_MODE
-		// Issue command to start data conversion
-		ads1x9x_command(CMD_START);
-		#endif
+		if (singleShotMode) {
+			// Issue command to start data conversion
+			ads1x9x_command(CMD_START);
+		}
 
 
 		// Wait for data available
@@ -67,10 +74,10 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			break;
 		}
 
-		#ifdef SINGLE_SHOT_MODE
-		// Issue command to read ECG data
-		ads1x9x_command(CMD_RDATA);
-		#endif
+		if (singleShotMode) {
+			// Issue command to read ECG data
+			ads1x9x_command(CMD_RDATA);
+		}
 
 		ads1x9x_ecg_read (&buf);
 
@@ -107,7 +114,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			recordIndex++;
 			break;
 
-			case ASCII_CHART:
+			case OUTPUT_ASCII_CHART:
 			p1 = (ch1*40)/(1<<23) + 40;
 			p2 = (ch2*40)/(1<<23) + 40;
 			printf ("|");
@@ -141,10 +148,10 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	}
 
-
-	#ifndef SINGLE_SHOT_MODE
-	//ads1x9x_command(CMD_SDATAC);
-	#endif
+	// Stop continuous data conversion
+	if ( ! singleShotMode) {
+		ads1x9x_command(CMD_SDATAC);
+	}
 
 	// UI LED off
 	setLED(1,0);
