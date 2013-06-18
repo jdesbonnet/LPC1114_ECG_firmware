@@ -14,6 +14,7 @@
 #define OUTPUT_BINARY  ('B')
 #define OUTPUT_TEXT  ('A')
 #define STORE_TO_SRAM  ('S')
+#define ASCII_CHART ('C')
 
 void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 {
@@ -21,7 +22,10 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	uint8_t buf[12];
 
 	uint32_t i;
+	uint32_t ch1,ch2;
 	uint32_t n = atoi (argv[0]);
+
+	uint8_t p1,p2;
 
 	char outputFormat = argv[1][0];
 
@@ -74,6 +78,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		// Status is 1100 + LOFF_STAT[4:0] + GPIO[1:0] + 00000 0000 0000
 		status = ((buf[0]<<8 | buf[1])>>5)&0xff;
 
+		ch1 = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8)/256;
+		ch2 = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8)/256;
+
 		switch (outputFormat) {
 			case OUTPUT_BINARY:
 			stream_write_start();
@@ -85,8 +92,8 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 			case OUTPUT_TEXT:
 			printf ("s=%x ", status );
-			printf ("ch1=%x ", (buf[3]<<16 | buf[4]<<8 | buf[5]) );
-			printf ("ch2=%x ", (buf[6]<<16 | buf[7]<<8 | buf[8]) );
+			printf ("ch1=%x ", buf[3]<<16 | buf[4]<<8 | buf[5] );
+			printf ("ch2=%x ", buf[6]<<16 | buf[7]<<8 | buf[8] );
 			printf ("\r\n");
 			break;
 
@@ -99,6 +106,25 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			sram_record_write(recordIndex*8,buf+1,8);
 			recordIndex++;
 			break;
+
+			case ASCII_CHART:
+			p1 = (ch1*40)/(1<<23) + 40;
+			p2 = (ch2*40)/(1<<23) + 40;
+			printf ("|");
+			for (i = 0; i < 80; i++) {
+				if (i==p1) {
+					printf ("1");
+				} else if (i==p2) {
+					printf ("2");
+				} else if (i==40) {
+					printf ("+");
+				} else {
+					printf (" ");
+				}
+			}
+			printf ("|");
+			printf ("%d %d\r\n",ch1,ch2);
+			
 		}
 
 

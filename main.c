@@ -63,9 +63,7 @@ uint32_t cmd_ads1x9x_flags = 0;
 
 
 int main(void) {
-	int i;
-	int id;
-	uint8_t record[12];
+
 	systemInit();
 
 	configure_pins();
@@ -93,6 +91,11 @@ int main(void) {
 
 	while (1) {
 		cmdPoll();
+
+		//if ( gpioGetValue(RADIO_INT_PORT, RADIO_INT_PIN) ) {
+		//	printf ("*");
+		//}
+
 	}
 
  	return 0;
@@ -117,6 +120,12 @@ void setLED (int ledNumber, int state) {
 	gpioSetValue(LED1_PORT,LED1_PIN, state);
 }
 
+void flashLED (int ledNumber, int duration) {
+	setLED(ledNumber,1);
+	delay(duration);
+	setLED(ledNumber,0);
+}
+
 /**
  * Configure pins for active operation. Called at boot or after deep sleep wake.
  */
@@ -125,7 +134,7 @@ void configure_pins (void) {
 	// Unless otherwise needed, set pins so that min current used
 	set_pins_low_power();
 
-	uartInit(9600);
+	uartInit(DEFAULT_UART_SPEED);
 
 	// Configure the /DRDY monitoring pin for input
 	gpioSetDir(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN,INPUT);
@@ -133,8 +142,25 @@ void configure_pins (void) {
 	// Configure PIO0_3: /CS line for SRAM
 	gpioSetDir(SRAM_CS_PORT,SRAM_CS_PIN,OUTPUT);
 
-	// LED1
+	// LED1 (output)
 	gpioSetDir(LED1_PORT,LED1_PIN,OUTPUT);
+
+	configure_interrupt_pin ();
+
+}
+
+void configure_interrupt_pin () {
+	// interrupt from Radio module
+	gpioSetDir(RADIO_INT_PORT, RADIO_INT_PIN, INPUT);
+
+
+	gpioSetInterrupt(RADIO_INT_PORT, RADIO_INT_PIN,
+                     gpioInterruptSense_Level,
+                     gpioInterruptEdge_Single,
+                     gpioInterruptEvent_ActiveLow);
+
+	// Not working, need to create int handler?
+	gpioIntEnable(RADIO_INT_PORT, RADIO_INT_PIN);
 }
 
 
@@ -204,5 +230,31 @@ void set_pins_low_power(void) {
 
 	// Consider powering LED by sinking current rather than sourcing.
 	setLED(1,0);
+}
+
+void print_ecg_record (uint8_t *buf) {
+	int status = buf[2];
+	printf ("s=%x ", status );
+	printf ("ch1=%x ", (buf[3]<<16 | buf[4]<<8 | buf[5]) );
+	printf ("ch2=%x ", (buf[6]<<16 | buf[7]<<8 | buf[8]) );
+	printf ("\r\n");
+}
+
+
+
+void PIOINT0_IRQHandler(void)
+{
+  uint32_t regVal;
+
+  regVal = gpioIntStatus(RADIO_INT_PORT, RADIO_INT_PIN);
+  if ( regVal )
+  {
+
+	flashLED(1,1000000);
+
+    gpioIntClear(RADIO_INT_PORT, RADIO_INT_PIN);
+  }
+
+  return;
 }
 

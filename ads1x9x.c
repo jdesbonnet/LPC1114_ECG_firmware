@@ -5,6 +5,29 @@
 #include "lpc111x.h"
 #include "ads1x9x.h"
 
+
+uint32_t int_sqrt(uint32_t a) {
+    uint64_t rem = 0;
+    int32_t root = 0;
+    int32_t i;
+
+    for (i = 0; i < 16; i++) {
+        root <<= 1;
+        rem <<= 2;
+        rem += a >> 30;
+        a <<= 2;
+
+        if (root < rem) {
+            root++;
+            rem -= root;
+            root++;
+        }
+    }
+
+    return (uint32_t) (root >> 1);
+}
+
+
 uint8_t ads1292r_default_register_settings[15] = {
 	0x00, //Device ID read Only
 
@@ -210,60 +233,73 @@ int ads1x9x_get_pga_bits(int pga_gain) {
 	return 0;
 }
 
-void ads1x9x_measure_shorted (int pga_gain) {
-
-	// Stop continuous data to allow register read.
-	ads1x9x_command (CMD_SDATAC);
-
-	// Using internal reference. Set PDB_REFBUF=1 and wait for ref to settle
-	// Bit 7: always 1
-	// Bit 6: PDB_LOFF_COMP = 0 (Lead-off comparitor power-down)
-	// Bit 5: PDB_REFBUF = 1 (reference buffer enabled)
-	// Bit 4: VREF_4V = 0 (reference set to 2.42V)
-	// Bit 3: CLK_EN = 0 (oscillator clock output disabled)
-	// Bit 2: always 0
-	// Bit 1: INT_TEST = 0 (test signal off)
-	// Bit 0: TEST_FREQ = 0 (DC)
-	ads1x9x_register_write (REG_CONFIG2, 0xA0);
-
-	// Bits[2:0] = 2 (500 kSPS)
-	ads1x9x_register_write (REG_CONFIG1, 0x02);
-
-	// Set channels to input short
-	int pga_bits = ads1x9x_get_pga_bits(pga_gain);
-	ads1x9x_register_write (REG_CH1SET, 0x01 |  (pga_bits<<4));
-	ads1x9x_register_write (REG_CH2SET, 0x01 |  (pga_bits<<4));
+void ads1x9x_measure_shorted () {
 
 	uint8_t buf[9];
 
 	int32_t adc[2] = {0,0};
-	int64_t adc_sum[2] = {0,0};
+
+	// http://www.johndcook.com/standard_deviation.html
+	// also // See Knuth TAOCP vol 2, 3rd edition, page 232
+	int64_t oldM[2], newM[2],oldS[2],newS[2];
+	int64_t sum[2]= {0,0};
 
 	int i, j;
 
+	int nsample = SPS/2;
+	//int nsample = 16;
+
 	ads1x9x_command (CMD_RDATAC);
 
-	for (i = 0; i < SPS; i++) {
+	for (i = 0; i < nsample; i++) {
+
+		if ( ads1x9x_drdy_wait (10000) == -1 ) {
+			printf ("ERROR 2\n");
+			return;
+		}
+
 		ads1x9x_ecg_read (buf);
 		adc[CH1] = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8) / 256;
 		adc[CH2] = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8) / 256;
-		for (j = 0; j < 2; j++) {
-			adc_sum[j] += adc[j];
+
+		if (i == 0) {
+			for (j = 0; j < 2; j++) {
+				oldM[j] = newM[j] = adc[j];
+				oldS[j] = 0;
+			}
+		} else {
+			for (j = 0; j < 2; j++) {
+				newM[j] = oldM[j] + (adc[j] - oldM[j])/(i+1);
+				newS[j] = oldS[j] + (adc[j] - oldM[j])*(adc[j] - newM[j]);
+				// setup for next iter
+				oldM[j] = newM[j];
+				oldS[j] = newS[j];
+			}
 		}
+		for (j = 0; j < 2; j++) {
+			sum[j] += adc[j];
+		}
+
 	}
 
 	ads1x9x_command (CMD_SDATAC);
 
-	printf ("Short (mean of %d samples): ", SPS);
-	printf ("ch1=%d ch2=%d\r\n", 
-		(adc_sum[CH1]/SPS) , (adc_sum[CH2]/SPS) 
-	);
 
+	//printf ("isqrt(1000000)=%d\r\n", int_sqrt(1000000));
+
+	printf ("Short (mean of %d samples):", nsample);
+	for (j = 0; j < 2; j++) {
+		printf (" ch%dmeanN=%d", (j+1), (int)newM[j]);
+		printf (" ch%dmeanO=%d", (j+1), (int)(sum[j]/nsample) );
+		printf (" ch%dstd=%d", (j+1), (int)int_sqrt(newS[j]/(nsample-1)));
+	}
+	printf ("\r\n");
+	
 }
 
 
 
-void ads1x9x_measure_test_signal (int pga_gain) {
+void ads1x9x_measure_test_signal () {
 
 	int32_t adc[2] = {0,0};
 	int64_t adc_sum[2] = {0,0};
@@ -273,15 +309,7 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 
 	uint8_t buf[9];
 
-	ads1x9x_command (CMD_SDATAC);
-
-	// Activate a 1mV x Vref/2.4 square wave test signal
-	ads1x9x_register_write(REG_CONFIG2, 0xA3);
-
-	int pga_bits = ads1x9x_get_pga_bits(pga_gain);
-	ads1x9x_register_write(REG_CH1SET, 0x05 | (pga_bits<<4));
-	ads1x9x_register_write(REG_CH2SET, 0x05 | (pga_bits<<4));
-
+	
 	ads1x9x_command (CMD_RDATAC);
 
 
@@ -341,7 +369,9 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 	int64_t low_sum2[2] = {0,0};
 	int64_t high_sum2[2] = {0,0};
 
-
+	// http://www.johndcook.com/standard_deviation.html
+	// also // See Knuth TAOCP vol 2, 3rd edition, page 232
+	int64_t low_oldM[2], low_newM[2], low_oldS[2],low_newS[2];
 
 	for (i = 0; i < SPS; i++) {
 		if ( ads1x9x_drdy_wait (10000) == -1 ) {
@@ -392,3 +422,5 @@ void ads1x9x_measure_test_signal (int pga_gain) {
 
 
 }
+
+

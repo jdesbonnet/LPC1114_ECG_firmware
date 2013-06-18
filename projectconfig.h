@@ -54,10 +54,18 @@ Configuration specific to the ECG application:
 #define ADS1x9x_DRDY_PORT (1)
 #define ADS1x9x_DRDY_PIN (5)
 
+#define RADIO_INT_PORT (0)
+#define RADIO_INT_PIN (1)
+
+#define DEFAULT_UART_SPEED (115200)
+
+//#define GPIO_ENABLE_IRQ1
+
 void setLED(int ledNumber, int state);
 void configure_pins(void);
+void configure_interrupt_pin(void);
 void set_pins_low_power(void);
-
+void flashLED(int ledNumber, int duration);
 
 /*=========================================================================
     BOARD SELECTION

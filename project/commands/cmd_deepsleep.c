@@ -72,7 +72,11 @@ void cmd_deepsleep(uint8_t argc, char **argv)
 
 	set_pins_low_power();
 
-	pmuDeepSleep(10);
+
+	configure_interrupt_pin();
+
+
+	pmuDeepSleep(sleepTimeSeconds);
 
 	// Configure pins for operational use now that awake again
 	configure_pins();
