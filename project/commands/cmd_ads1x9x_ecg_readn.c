@@ -33,6 +33,8 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	setLED(1,1);
 
 
+	ads1x9x_command(CMD_SDATAC);
+
 
 	// Write number of records to SRAM
 	if (outputFormat == STORE_TO_SRAM) {
@@ -48,12 +50,12 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	bool singleShotMode=false;
 	switch (outputFormat) {
 		case OUTPUT_TEXT:
-		//case OUTPUT_ASCII_CHART:
+		case OUTPUT_ASCII_CHART:
 		singleShotMode = true;
 	}
 
-	// Write to CONFIG1 to set single shot or continuous mode. 500sps in both cases.
-	ads1x9x_register_write(REG_CONFIG1, singleShotMode ? 0x12 : 0x02);
+	// Write to CONFIG1 to set single shot 125sps or continuous mode 500sps
+	ads1x9x_register_write(REG_CONFIG1, singleShotMode ? 0x80 : 0x02);
 
 	if ( ! singleShotMode) {
 		ads1x9x_command(CMD_RDATAC);
@@ -73,6 +75,12 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			printf ("TIMEOUT\r\n");
 			break;
 		}
+
+		if (singleShotMode) {
+			// Issue command to start data conversion
+			//ads1x9x_command(CMD_STOP);
+		}
+
 
 		if (singleShotMode) {
 			// Issue command to read ECG data
@@ -131,6 +139,8 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			}
 			printf ("|");
 			printf ("%d %d\r\n",ch1,ch2);
+
+			delay (200000);
 			
 		}
 
@@ -152,6 +162,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	if ( ! singleShotMode) {
 		ads1x9x_command(CMD_SDATAC);
 	}
+
+	// Stop conversions
+	ads1x9x_command(CMD_STOP);
 
 	// UI LED off
 	setLED(1,0);
