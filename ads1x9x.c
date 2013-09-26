@@ -66,11 +66,22 @@ uint8_t ads1292r_default_register_settings[15] = {
  	0x00,
 
 	//RESP1 (0x09)
-	0xEA,
+	// bit 7: RESP_DEMOD_EN1: 1 = enable respiration demodulation circuitary on Ch1
+	// bit 6: RESP_MOD_EN: 1 = enable respiration modulation circuitary on ch1
+	// bits [5:2] : RESP_PH respiration phase
+	// bit 1 : must be set to 1
+	// bit 0 : RESP_CTRL respiration control. 1 = internal respiration with external ck, 0=internal ck.
+	//0xEA,
+	0x02,
 
 	//RESP2 (0x0a0)
-	//0x03,
-	0x83,
+	// bit 7: CALIB_ON
+	// bits [6:3]: must be 0
+	// bit 2: RESP_FREQ 0 = 32kHz, 1 = 64kHz
+	// bit 1: RLDREF_INT 0 = signal fed externally, 1 = AVDD-AVSS/2 generated internally
+	// bit 0: must be 1
+	0x03,
+	//0x83,
 
 	//GPIO
 	// bits [7:4] must be 0
@@ -212,17 +223,21 @@ void ads1x9x_init (void) {
 
 int ads1x9x_test(void) {
 	uint8_t v = ads1x9x_register_read (REG_ID);
-	return ( v == 0x53 || v == 0x73) ? 0 : -1;
+	//return ( v == 0x53 || v == 0x73) ? 0 : -1;
+	if (! (v == 0x53 || v == 0x73) ) {
+		return -1;
+	}
 
 	// Blink LED1 on GPIO1
 	int i;
-	for (i = 0; i < 1024; i++) {
-	v = ads1x9x_register_read (REG_GPIO);
-	v |= (1<<1); // set GPIO1D=1
-	ads1x9x_register_write(REG_GPIO,v);
-	delay(10000);
-	v &= ~(1<<1); // set GPIO1D=0
-	ads1x9x_register_write(REG_GPIO,v);
+	for (i = 0; i < 2; i++) {
+		v = ads1x9x_register_read (REG_GPIO);
+		v |= (0x03); // set GPIO1D=1
+		ads1x9x_register_write(REG_GPIO,v);
+		delay(1000000);
+		v &= ~(0x03); // set GPIO1D=0
+		ads1x9x_register_write(REG_GPIO,v);
+		delay(1000000);
 	}
 }
 
