@@ -164,9 +164,9 @@ void ads1x9x_register_write (uint8_t registerId, uint8_t registerValue) {
 void ads1x9x_ecg_read (uint8_t *buf) {
 	ads1x9x_select(); delay(32);
 	sspReceive (0, (uint8_t *)buf, 9);
-	delay(32);
+	delay(16);
 	ssp0Deselect();
-	delay(32);
+	delay(16);
 }
 
 
@@ -205,7 +205,8 @@ void ads1x9x_init (void) {
 }
 
 int ads1x9x_test(void) {
-	return (ads1x9x_register_read (REG_ID) == 0x53) ? 0 : -1;
+	uint8_t v = ads1x9x_register_read (REG_ID);
+	return ( v == 0x53 || v == 0x73) ? 0 : -1;
 }
 
 /**
