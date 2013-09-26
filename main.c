@@ -66,6 +66,8 @@ int main(void) {
 
 	systemInit();
 
+	//print_firmware_checksum();
+
 	configure_pins();
 
 	setLED(1,1);
@@ -240,6 +242,17 @@ void print_ecg_record (uint8_t *buf) {
 	printf ("\r\n");
 }
 
+void print_firmware_checksum () {
+	
+	uint32_t *i;
+	i = 0x100000;
+	uint32_t sum = 0;
+	for (i = 0x100000; i< 0x108000; i++) {
+		sum += *i;
+	}
+
+	printf ("firmware checksum=%x\r\n", sum);
+}
 
 
 void PIOINT0_IRQHandler(void)
