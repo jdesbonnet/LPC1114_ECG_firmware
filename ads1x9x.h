@@ -18,6 +18,8 @@
 #define REG_CH1SET (0x04)
 #define REG_CH2SET (0x05)
 
+#define REG_GPIO (0x0b)
+
 #define CH1 (0)
 #define CH2 (1)
 #define SPS (500)

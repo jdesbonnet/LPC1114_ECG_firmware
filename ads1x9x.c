@@ -73,7 +73,13 @@ uint8_t ads1292r_default_register_settings[15] = {
 	0x83,
 
 	//GPIO
-	0x0C // GPIOC2=INPUT, GPIOC1=INPUT
+	// bits [7:4] must be 0
+	// bit 3: GPIOC2 control, 0=output, 1=input
+	// bit 2: GPIOC1 control, 0=output, 1=input
+	// bit 1: GPIOD2 data,
+	// bit 0: GPIOD1 data 
+	//0x0C // GPIOC2=INPUT, GPIOC1=INPUT, data n/a
+	0x00 // GPIO2,1 as output, set low
 	//0x01 // GPIOC2=OUTPUT, GPIOC1=OUTPUT, GPIOD2=0, GPIOD1=1
 };
 
@@ -207,6 +213,17 @@ void ads1x9x_init (void) {
 int ads1x9x_test(void) {
 	uint8_t v = ads1x9x_register_read (REG_ID);
 	return ( v == 0x53 || v == 0x73) ? 0 : -1;
+
+	// Blink LED1 on GPIO1
+	int i;
+	for (i = 0; i < 1024; i++) {
+	v = ads1x9x_register_read (REG_GPIO);
+	v |= (1<<1); // set GPIO1D=1
+	ads1x9x_register_write(REG_GPIO,v);
+	delay(10000);
+	v &= ~(1<<1); // set GPIO1D=0
+	ads1x9x_register_write(REG_GPIO,v);
+	}
 }
 
 /**
@@ -414,10 +431,10 @@ void ads1x9x_measure_test_signal () {
 
 		printf ("Test Signal on CH%d low=%d (%d samples, var=%d) high=%d (%d samples, var=%d) range=%d adc/V=%d\r\n", 
 			(j+1),
-			low_mean, low_sum_count[j], low_var,
-			high_mean, high_sum_count[j], high_var,
-			(high_mean - low_mean), 
-			adc_per_v
+			(int)low_mean, (int)low_sum_count[j], (int)low_var,
+			(int)high_mean, (int)high_sum_count[j], (int)high_var,
+			(int)(high_mean - low_mean), 
+			(int)adc_per_v
 		);
 	}
 
