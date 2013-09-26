@@ -152,6 +152,8 @@ void configure_pins (void) {
 }
 
 void configure_interrupt_pin () {
+
+	#if RADIO_INT_EN
 	// interrupt from Radio module
 	gpioSetDir(RADIO_INT_PORT, RADIO_INT_PIN, INPUT);
 
@@ -163,6 +165,7 @@ void configure_interrupt_pin () {
 
 	// Not working, need to create int handler?
 	gpioIntEnable(RADIO_INT_PORT, RADIO_INT_PIN);
+	#endif
 }
 
 

@@ -54,6 +54,7 @@ Configuration specific to the ECG application:
 #define ADS1x9x_DRDY_PORT (1)
 #define ADS1x9x_DRDY_PIN (5)
 
+//#define RADIO_INT_EN
 #define RADIO_INT_PORT (0)
 #define RADIO_INT_PIN (1)
 
