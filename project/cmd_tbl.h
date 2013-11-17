@@ -54,6 +54,7 @@ void cmd_reset(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_write(uint8_t argc, char **argv);
 void cmd_ads1x9x_ecg_readn(uint8_t argc, char **argv);
+void cmd_ads1x9x_ecg_pace(uint8_t argc, char **argv);
 void cmd_ads1x9x_ecg_playback(uint8_t argc, char **argv);
 void cmd_ads1x9x_ch_cfg(uint8_t argc, char **argv);
 void cmd_ads1x9x_temp_read(uint8_t argc, char **argv);
@@ -108,6 +109,7 @@ cmd_t cmd_tbl[] =
 	{ "SET",    1,  2,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read/record n ECG records"   , "'ECGRN <n>'" },
 	{ "ECGP",   1,  2,  0, cmd_ads1x9x_ecg_playback             , "Playback ECG from SRAM"   , "'ECGP <A|B>'" },
+	{ "PACE",   0,  0,  0, cmd_ads1x9x_ecg_pace             , "Pace detection"   , CMD_NOPARAMS },
 	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 	{ "TEMP",    0,  0,  0, cmd_ads1x9x_temp_read, "Read temperature", CMD_NOPARAMS },
 	{ "TEST",    0,  0,  0, cmd_ads1x9x_test, "Test ADS1x9x", CMD_NOPARAMS },
