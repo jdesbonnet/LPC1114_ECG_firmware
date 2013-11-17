@@ -70,7 +70,7 @@ int main(void) {
 
 	configure_pins();
 
-	setLED(1,1);
+
 
 	// Test SRAM
 	if ( sram_test() != 0) {
@@ -89,6 +89,9 @@ int main(void) {
 		printf ("ADS1x9x success\r\n");
 	}
 
+
+	setLED(1,1);
+	delay (5000000);
 	setLED(1,0);
 
 	while (1) {

@@ -18,6 +18,7 @@ void cmd_ads1x9x_test(uint8_t argc, char **argv)
 	// Bits[2:0] = 2 (500 kSPS)
 	ads1x9x_register_write (REG_CONFIG1, 0x02);
 
+	ads1x9x_command(CMD_START);
 	ads1x9x_command(CMD_SDATAC); 
 
 	for (i = 0; i < 3; i++) {
@@ -81,11 +82,7 @@ ads1x9x_register_write(5,0x11);
 	}
 
 
-ads1x9x_register_write(4,0x11);
-ads1x9x_register_write(5,0x11);
-
-		ads1x9x_command(CMD_OFFSETCAL); 
-		delay(2000000);
+	ads1x9x_command(CMD_STOP);
 
 }
 

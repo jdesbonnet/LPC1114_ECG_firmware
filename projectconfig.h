@@ -45,8 +45,8 @@
 Configuration specific to the ECG application:
 
  -----------------------------------------------------------------------*/
-#define LED1_PORT (1)
-#define LED1_PIN (4)
+#define LED1_PORT (0)
+#define LED1_PIN (7)
 
 #define SRAM_CS_PORT (0)
 #define SRAM_CS_PIN (3)
@@ -58,7 +58,8 @@ Configuration specific to the ECG application:
 #define RADIO_INT_PORT (0)
 #define RADIO_INT_PIN (1)
 
-#define DEFAULT_UART_SPEED (115200)
+#define DEFAULT_UART_SPEED (9600)
+//#define DEFAULT_UART_SPEED (115200)
 
 //#define GPIO_ENABLE_IRQ1
 

@@ -23,18 +23,16 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	uint32_t i;
 	uint32_t ch1,ch2;
+
+	// Number of samples required
 	uint32_t n = atoi (argv[0]);
 
 	uint8_t p1,p2;
 
 	char outputFormat = argv[1][0];
 
-	// UI LED on
+	// UI LED on to indicate ECG capture in progress
 	setLED(1,1);
-
-
-	ads1x9x_command(CMD_SDATAC);
-
 
 	// Write number of records to SRAM
 	if (outputFormat == STORE_TO_SRAM) {
@@ -47,6 +45,9 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 	}
 
 
+	// Modes in which data is sent as text or charts to serial port cannot
+	// stream data fast enough for continuous mode. Therefore use single
+	// shot mode for these output formats.
 	bool singleShotMode=false;
 	switch (outputFormat) {
 		case OUTPUT_TEXT:
@@ -54,13 +55,15 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		singleShotMode = true;
 	}
 
-	// Write to CONFIG1 to set single shot 125sps or continuous mode 500sps
+	// Write to CONFIG1 to set single shot 125sps (0x80) or continuous mode 500sps (0x02)
 	ads1x9x_register_write(REG_CONFIG1, singleShotMode ? 0x80 : 0x02);
 
+	// Issue read continuous (RDATAC) of not in single shot mode
 	if ( ! singleShotMode) {
 		ads1x9x_command(CMD_RDATAC);
 	}
 
+	// Loop for number of samples required
 	while (n--) {
 
 		if (singleShotMode) {
@@ -69,7 +72,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		}
 
 
-		// Wait for data available
+		// Wait for data available (DRDY line goes low)
 		status = ads1x9x_drdy_wait(1000000);
 		if (status != 0) {
 			printf ("TIMEOUT\r\n");
@@ -77,13 +80,8 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 		}
 
 		if (singleShotMode) {
-			// Issue command to start data conversion
-			//ads1x9x_command(CMD_STOP);
-		}
-
-
-		if (singleShotMode) {
-			// Issue command to read ECG data
+			//ads1x9x_command(CMD_START);
+			// Issue command to read ECG data continuously
 			ads1x9x_command(CMD_RDATA);
 		}
 
@@ -138,9 +136,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 				}
 			}
 			printf ("|");
-			printf ("%d %d\r\n",ch1,ch2);
-
-			delay (200000);
+			printf (" %d %d\r\n",ch1,ch2);
 			
 		}
 
