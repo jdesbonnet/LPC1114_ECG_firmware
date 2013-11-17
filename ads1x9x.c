@@ -114,12 +114,9 @@ void ads1x9x_deselect(void) {
  */
 int ads1x9x_drdy_wait (int timeout) {
 	while (gpioGetValue(ADS1x9x_DRDY_PORT,ADS1x9x_DRDY_PIN) == 1)  {
-		if (timeout != 0) {
-			if ( (--timeout) == 0 ) {
-				// reached timeout
-				return -1;
-			}
-		} 
+		if (timeout-- == 0) {
+			return -1;
+		}	
 	}
 	return 0;
 }
