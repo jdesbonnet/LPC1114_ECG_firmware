@@ -38,7 +38,8 @@ uint8_t ads1292r_default_register_settings[15] = {
 
 	// CONFIG2 (0x02)
 	// was E0
-	0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
+	0xA0, //CONFIG2: PDB_LOFF_COMP=0 (lead off comp off), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=0
+	//0xC8, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1
 	//0xCB, //CONFIG2: PDB_LOFF_COMP=1 (lead off comp enabled), PDB_REFBUF=1 (ref buf en), VREF_4V=0, CLK_EN=1, int test
 
 	// LOFF (0x03)

@@ -63,6 +63,8 @@ Configuration specific to the ECG application:
 
 //#define GPIO_ENABLE_IRQ1
 
+#define GREEN_LED (1)
+
 void setLED(int ledNumber, int state);
 void configure_pins(void);
 void configure_interrupt_pin(void);
