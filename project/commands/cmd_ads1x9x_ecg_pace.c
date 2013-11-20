@@ -9,23 +9,29 @@
 #include "parse_hex.h"
 #include "stream_encode.h"
 
+#define USE_INT_MATH
+
 /**
  * PACE (Pace detect command).
  */
 void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 {
 
-	int32_t i=0,last_qrs=0;
+	int32_t i=0,last_qrs=0,hp,i_hp;
 	int32_t ch1,ch2;
+
+	//uint32_t last_qrs_t = systickGetTicks();
 
 	int status;
 	uint8_t buf[12];
 
-	int32_t upper_envelope=0;
-	int32_t baseline_lpf=0;
-	int32_t rm_mains_lpf=0;
-	int32_t r;
-	int32_t hp, hp_lpf=500;
+	double ch1d;
+	double upper_envelope=0; int32_t i_upper_envelope=0;
+	double d;
+	double baseline_lpf=0; int32_t i_baseline_lpf=0;
+	double rm_mains_lpf=0; int32_t i_rm_mains_lpf=0;
+	double r; int32_t i_r;
+	double hp_lpf=500; int32_t i_hp_lpf=500*256;
 
 	// UI LED on to indicate ECG capture in progress
 	setLED(1,1);
@@ -72,35 +78,75 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 		// http://electronics.stackexchange.com/questions/30370/fast-and-memory-efficient-moving-average-calculation
 		// FILT <-- FILT + FF(NEW - FILT)
 	
-		baseline_lpf += (ch1-baseline_lpf)/256;
-		rm_mains_lpf += (ch1-rm_mains_lpf)/16;
+		ch1d = (double)ch1;
+		baseline_lpf += (ch1d-baseline_lpf)/256;
+		rm_mains_lpf += (ch1d-rm_mains_lpf)/16;
+
+		i_baseline_lpf += (ch1*256 - i_baseline_lpf)/256;
+		i_rm_mains_lpf += (ch1*256 - i_rm_mains_lpf)/16;
 
 		// Upper envelope detector
 		if (rm_mains_lpf > upper_envelope) {
 			upper_envelope = rm_mains_lpf;
 		} else {
+			/*
+			d = upper_envelope-baseline_lpf;
+			if (d>0 && d < 2048) {
+				d=2048;
+			} else if (d<0 && d>-2048) {
+				d=-2048;
+			}
+			upper_envelope -= d/2048;
+			*/
 			upper_envelope -= (upper_envelope-baseline_lpf)/2048;
+		}
+		if (i_rm_mains_lpf > i_upper_envelope) {
+			i_upper_envelope = i_rm_mains_lpf;
+		} else {
+			i_upper_envelope -= (i_upper_envelope-i_baseline_lpf)/2048;
 		}
 
 		// Heart period in sample periods
 		hp = i - last_qrs;
+		i_hp = (i - last_qrs)*256;
 
-		// 38/64 =~ 60%
-		if ( hp > (hp_lpf*38)/64 ) {
+		if ( hp>100 ) {
 
 			// Where is the ECG signal (after 50Hz removal LPF) in the range of
 			// Q to R range? Expect approx -64 -> 256
-			r = (int32_t)( ((long)(rm_mains_lpf-baseline_lpf)*64L) / (long)(upper_envelope-baseline_lpf));
+			//r = (int32_t)( ((long)(rm_mains_lpf-baseline_lpf)*64L) / (long)(upper_envelope-baseline_lpf));
+			r =  (rm_mains_lpf-baseline_lpf) / (upper_envelope-baseline_lpf);
 
-			// 45/64 =~ 70%
-			if (r > 45) {
-				// 90/64 =~ 140%
-				if ( hp < (hp_lpf*90)/64) {
-					hp_lpf += (hp - hp_lpf)/16;
+			i_r = (long)(i_rm_mains_lpf - i_baseline_lpf) / ((long)(i_upper_envelope - i_baseline_lpf)/256);
+
+			#ifdef USE_INT_MATH
+			if (i_r > 180) {
+				if ( hp < (i_hp_lpf*14)/10) {
+					i_hp_lpf += (i_hp - i_hp_lpf)/8;
+				} else {
+					i_hp_lpf += (i_hp - i_hp_lpf)/32;
 				}
 				last_qrs=i;
-				printf ("%d %d %d %d %d %d %d\r\n",(int)i,(int)hp, (int)(hp_lpf*2), (int)baseline_lpf, (int)upper_envelope, (int)rm_mains_lpf, (int)r);
+				printf ("%d %d %d %d\r\n",(int)i,(int)(i_hp_lpf*2/256), 
+					(int)i_baseline_lpf/256, (int)i_upper_envelope/256);
+			}// else {
+				//printf ("i_r=%d\r\n",i_r);
+			//}
+			#else
+			if (r > 0.7) {
+				// 90/64 =~ 140%
+				//if ( hp < (hp_lpf*90)/64) {
+				if ( hp < (int)(hp_lpf*1.4)) {
+					hp_lpf += ((double)hp - hp_lpf)/8.0;
+				} else {
+					hp_lpf += ((double)hp - hp_lpf)/32.0;
+				}
+				last_qrs=i;
+				//last_qrs_t =  systickGetTicks();
+				printf ("%d %d %d %d\r\n",(int)i,(int)hp_lpf*2, 
+					(int)baseline_lpf, (int)upper_envelope);
 			}
+			#endif
 		}
 
 
