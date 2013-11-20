@@ -3,20 +3,28 @@
 
 #include "projectconfig.h"
 #include "core/cmd/cmd.h"
+#include "core/systick/systick.h"
 #include "commands.h"
 #include "ads1x9x.h"
 #include "parse_hex.h"
 #include "stream_encode.h"
 
+/**
+ * PACE (Pace detect command).
+ */
 void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 {
 
-	//uint32_t i;
-	uint32_t ch1,ch2;
-	uint32_t lpf=0,v;
+	uint32_t i;
+	int32_t ch1,ch2;
+	int32_t lpf=0,v;
 
-	int status;
+	int status,skip=0;
 	uint8_t buf[12];
+
+
+	int32_t threshold = atoi (argv[0]);
+	int32_t SKIP = atoi(argv[1]);
 
 	// UI LED on to indicate ECG capture in progress
 	setLED(1,1);
@@ -25,14 +33,20 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 	// Write to CONFIG1 to set continuous mode 500sps (0x02)
 	ads1x9x_register_write(REG_CONFIG1, 0x02);
 
+	// Start conversions
+	ads1x9x_command(CMD_START);
+
 	// Issue read continuous (RDATAC)
 	ads1x9x_command(CMD_RDATAC);
 	
-printf ("PACEDETECT\r\n" );
 
+	printf ("threshold=%d skip=%d\r\n", (int)threshold, (int)SKIP);
 
 	// Loop for number of samples required
 	while (1) {
+
+		i++;
+
 
 		// Wait for data available (DRDY line goes low)
 		status = ads1x9x_drdy_wait(1000000);
@@ -50,10 +64,25 @@ printf ("PACEDETECT\r\n" );
 		ch1 = (buf[3]<<24 | buf[4]<<16 | buf[5]<<8)/256;
 		ch2 = (buf[6]<<24 | buf[7]<<16 | buf[8]<<8)/256;
 
-		lpf += ch1;
-		v = lpf>>10;
-		lpf -= v;
-		printf ("%d ", (int)v );
+		// http://electronics.stackexchange.com/questions/30370/fast-and-memory-efficient-moving-average-calculation
+		// FILT <-- FILT + FF(NEW - FILT)
+		lpf += (ch1-lpf)/256;
+
+		
+		if (skip==0) {
+			if ( (ch1 - lpf) > threshold ) {
+				printf ("P %d\r\n", (int)systickGetTicks());
+				skip=SKIP;
+			}
+		} else {
+			skip--;
+		}
+
+		/*
+		if (i%250==0) {
+			printf ("%d %d %d\r\n", (int)(ch1), (int)v, (int)lpf );
+		}
+		*/
 
 		cmdPoll();
 

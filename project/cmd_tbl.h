@@ -109,7 +109,7 @@ cmd_t cmd_tbl[] =
 	{ "SET",    1,  2,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read/record n ECG records"   , "'ECGRN <n>'" },
 	{ "ECGP",   1,  2,  0, cmd_ads1x9x_ecg_playback             , "Playback ECG from SRAM"   , "'ECGP <A|B>'" },
-	{ "PACE",   0,  0,  0, cmd_ads1x9x_ecg_pace             , "Pace detection"   , CMD_NOPARAMS },
+	{ "PACE",   2,  2,  0, cmd_ads1x9x_ecg_pace             , "Pace detection"   , "'PACE <threshold> <skip-samples>'" },
 	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 	{ "TEMP",    0,  0,  0, cmd_ads1x9x_temp_read, "Read temperature", CMD_NOPARAMS },
 	{ "TEST",    0,  0,  0, cmd_ads1x9x_test, "Test ADS1x9x", CMD_NOPARAMS },

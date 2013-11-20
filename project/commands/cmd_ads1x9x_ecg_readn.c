@@ -9,7 +9,6 @@
 #include "stream_encode.h"
 #include "sram_23a1024.h"
 
-//#define SINGLE_SHOT_MODE
 
 #define OUTPUT_BINARY  ('B')
 #define OUTPUT_TEXT  ('A')
@@ -23,6 +22,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 
 	uint32_t i;
 	uint32_t ch1,ch2;
+
 
 	// Number of samples required
 	uint32_t n = atoi (argv[0]);
@@ -137,6 +137,7 @@ void cmd_ads1x9x_ecg_readn (uint8_t argc, char **argv)
 			}
 			printf ("|");
 			printf (" %d %d\r\n",ch1,ch2);
+
 			
 		}
 

@@ -81,7 +81,7 @@ ads1x9x_register_write(5,0x11);
 
 	}
 
-
+	ads1x9x_command(CMD_SDATAC); 
 	ads1x9x_command(CMD_STOP);
 
 }

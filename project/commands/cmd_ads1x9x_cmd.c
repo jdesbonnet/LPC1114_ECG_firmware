@@ -7,6 +7,9 @@
 #include "parse_hex.h"
 #include "cmd_ads1x9x.h"
 
+/**
+ * Send ADS1x9x commands to ADS1x9x IC.
+ */
 void cmd_ads1x9x_cmd(uint8_t argc, char **argv)
 {
 	int cmd;
