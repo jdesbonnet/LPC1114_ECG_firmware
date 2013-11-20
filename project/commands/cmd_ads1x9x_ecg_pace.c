@@ -9,6 +9,7 @@
 #include "parse_hex.h"
 #include "stream_encode.h"
 
+#define USE_FP_MATH
 #define USE_INT_MATH
 
 /**
@@ -25,13 +26,21 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 	int status;
 	uint8_t buf[12];
 
+	#ifdef USE_FP_MATH
 	double ch1d;
-	double upper_envelope=0; int32_t i_upper_envelope=0;
+	double upper_envelope=0; 
 	double d;
-	double baseline_lpf=0; int32_t i_baseline_lpf=0;
-	double rm_mains_lpf=0; int32_t i_rm_mains_lpf=0;
+	double baseline_lpf=0; 
+	double rm_mains_lpf=0; 
 	double r; int32_t i_r;
-	double hp_lpf=500; int32_t i_hp_lpf=500*256;
+	double hp_lpf=500; 
+	#endif
+
+	int32_t i_upper_envelope=0;
+	int32_t i_baseline_lpf=0;
+	int32_t i_rm_mains_lpf=0;
+	int32_t i_hp_lpf=500*256;
+
 
 	// UI LED on to indicate ECG capture in progress
 	setLED(1,1);
@@ -78,14 +87,17 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 		// http://electronics.stackexchange.com/questions/30370/fast-and-memory-efficient-moving-average-calculation
 		// FILT <-- FILT + FF(NEW - FILT)
 	
+		#ifdef USE_FP_MATH
 		ch1d = (double)ch1;
 		baseline_lpf += (ch1d-baseline_lpf)/256;
 		rm_mains_lpf += (ch1d-rm_mains_lpf)/16;
+		#endif
 
 		i_baseline_lpf += (ch1*256 - i_baseline_lpf)/256;
 		i_rm_mains_lpf += (ch1*256 - i_rm_mains_lpf)/16;
 
 		// Upper envelope detector
+		#ifdef USE_FP_MATH
 		if (rm_mains_lpf > upper_envelope) {
 			upper_envelope = rm_mains_lpf;
 		} else {
@@ -100,6 +112,7 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 			*/
 			upper_envelope -= (upper_envelope-baseline_lpf)/2048;
 		}
+		#endif
 		if (i_rm_mains_lpf > i_upper_envelope) {
 			i_upper_envelope = i_rm_mains_lpf;
 		} else {
@@ -114,12 +127,24 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 
 			// Where is the ECG signal (after 50Hz removal LPF) in the range of
 			// Q to R range? Expect approx -64 -> 256
-			//r = (int32_t)( ((long)(rm_mains_lpf-baseline_lpf)*64L) / (long)(upper_envelope-baseline_lpf));
+
+
+			#ifdef USE_FP_MATH
 			r =  (rm_mains_lpf-baseline_lpf) / (upper_envelope-baseline_lpf);
-
+			if (r > 0.7) {
+				if ( hp < (int)(hp_lpf*1.4)) {
+					hp_lpf += ((double)hp - hp_lpf)/8.0;
+				} else {
+					hp_lpf += ((double)hp - hp_lpf)/32.0;
+				}
+				last_qrs=i;
+				printf ("%d %d %d %d\r\n",(int)i,(int)hp_lpf*2, 
+					(int)baseline_lpf, (int)upper_envelope);
+			}
+			#else
+			// i_r 0 = baseline; 256 = upper_envelope and also dip negative
+			// TODO: is long casting necessary?
 			i_r = (long)(i_rm_mains_lpf - i_baseline_lpf) / ((long)(i_upper_envelope - i_baseline_lpf)/256);
-
-			#ifdef USE_INT_MATH
 			if (i_r > 180) {
 				if ( hp < (i_hp_lpf*14)/10) {
 					i_hp_lpf += (i_hp - i_hp_lpf)/8;
@@ -129,22 +154,6 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 				last_qrs=i;
 				printf ("%d %d %d %d\r\n",(int)i,(int)(i_hp_lpf*2/256), 
 					(int)i_baseline_lpf/256, (int)i_upper_envelope/256);
-			}// else {
-				//printf ("i_r=%d\r\n",i_r);
-			//}
-			#else
-			if (r > 0.7) {
-				// 90/64 =~ 140%
-				//if ( hp < (hp_lpf*90)/64) {
-				if ( hp < (int)(hp_lpf*1.4)) {
-					hp_lpf += ((double)hp - hp_lpf)/8.0;
-				} else {
-					hp_lpf += ((double)hp - hp_lpf)/32.0;
-				}
-				last_qrs=i;
-				//last_qrs_t =  systickGetTicks();
-				printf ("%d %d %d %d\r\n",(int)i,(int)hp_lpf*2, 
-					(int)baseline_lpf, (int)upper_envelope);
 			}
 			#endif
 		}
