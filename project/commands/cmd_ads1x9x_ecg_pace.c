@@ -9,8 +9,11 @@
 #include "parse_hex.h"
 #include "stream_encode.h"
 
+// Define USE_FP_MATH to enable double precision floating point 
+// calculations. This adds at least 7kB to the program for FP
+// library as Cortex M0 does not support FP in hardware.
 //#define USE_FP_MATH
-#define USE_INT_MATH
+
 
 /**
  * PACE (Pace detect command).
@@ -85,7 +88,7 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 		// from here to end of loop (as of 20 Nov 2013)
 		// ~ 32 µs from here to end off loop (with no outpu)
 		// 900µs when outputing pace data
-	setLED(GREEN_LED,0);
+		//setLED(GREEN_LED,0);
 
 		// Record comprises 24bit status + 2 x 24bit channel data
 		// Status is 1100 + LOFF_STAT[4:0] + GPIO[1:0] + 00000 0000 0000
@@ -163,22 +166,26 @@ void cmd_ads1x9x_ecg_pace (uint8_t argc, char **argv)
 			}
 			#else
 			// i_r 0 = baseline; 256 = upper_envelope and also dip negative
-			// TODO: is long casting necessary?	
+			// TODO: is long casting necessary?
+
 			i_r = (long)(i_rm_mains_lpf - i_baseline_lpf) / ((long)(i_upper_envelope - i_baseline_lpf)/256);
+
 			if (i_r > 180) {
 				if ( hp < (i_hp_lpf*14)/10) {
-					i_hp_lpf += (i_hp - i_hp_lpf)/8;
+					i_hp_lpf += (i_hp - i_hp_lpf)/4;
 				} else {
-					i_hp_lpf += (i_hp - i_hp_lpf)/32;
+					i_hp_lpf += (i_hp - i_hp_lpf)/16;
 				}
 				last_qrs=i;
-				printf ("%d %d %d %d\r\n",(int)i,(int)(i_hp_lpf*2/256), 
-					(int)i_baseline_lpf/256, (int)i_upper_envelope/256);
+
+				// Blink LED (use duration of UART output for blink length).
+				setLED(GREEN_LED,1);
+				printf ("%d %d %d\r\n",(int)i,(int)(hp*2),(int)(i_hp_lpf*2/256));
+				setLED(GREEN_LED,0);
 			}
 			#endif
 		}
 
-	setLED(GREEN_LED,1);
 
 		cmdPoll();
 
