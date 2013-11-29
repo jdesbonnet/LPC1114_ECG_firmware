@@ -52,6 +52,8 @@ void cmd_ads1x9x_ecg_playback (uint8_t argc, char **argv)
 			break;
 		}
 
+		recordIndex++;
+
 		cmdPoll();
 
 		// Check for ESC from host
