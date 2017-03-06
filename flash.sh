@@ -1,3 +1,15 @@
 #!/bin/bash
-../lpc21isp_185/lpc21isp -control -bin firmware.bin  /dev/ttyUSB0 115200  120000
+#
+# Program LPC1114 ECG prototype via UART bootloader.
+# Requires RESET (JP2 header pin 6) connected to UART DTR
+# and ISP_MODE (JP header pin 2) connected to UART RTS.
+# Loads file 'firmware.bin'.
+# 
+# Use example
+# ./flash.sh /dev/ttyUSB0
+#
+
+UART_DEVICE=$1
+LPC21ISP=/opt/arm/bin/lpc21isp
+${LPC21ISP} -control -bin firmware.bin  ${UART_DEVICE} 115200  120000
 
