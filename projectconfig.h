@@ -41,6 +41,49 @@
 #include "sysdefs.h"
 
 /*=========================================================================
+
+Configuration specific to the ECG application:
+
+ -----------------------------------------------------------------------*/
+#define LED1_PORT (0)
+#define LED1_PIN (7)
+
+#define SRAM_CS_PORT (0)
+#define SRAM_CS_PIN (3)
+
+#define ADS1x9x_DRDY_PORT (1)
+#define ADS1x9x_DRDY_PIN (5)
+
+//#define RADIO_INT_EN
+#define RADIO_INT_PORT (0)
+#define RADIO_INT_PIN (1)
+
+#define DEFAULT_UART_SPEED (9600)
+//#define DEFAULT_UART_SPEED (115200)
+
+//#define GPIO_ENABLE_IRQ1
+
+#define GREEN_LED (1)
+
+// Global config structure. Use struct to ensure that memory is used efficiently.
+typedef struct ECGConfig {
+	uint8_t pace_upper_envlope_decay;
+	uint8_t pace_baseline_lpf_tc;
+	uint8_t pace_rm_mains_lpf_tc;
+} ECGConfig;
+#define MAX_CONFIG (4)
+#define CONFIG_PLAYBACK_REC_DELAY (0)
+#define CONFIG_QRS_DETECT_THRESHOLD (1)
+uint32_t config_var[MAX_CONFIG] ;
+
+
+void setLED(int ledNumber, int state);
+void configure_pins(void);
+void configure_interrupt_pin(void);
+void set_pins_low_power(void);
+void flashLED(int ledNumber, int duration);
+
+/*=========================================================================
     BOARD SELECTION
 
     Because several boards use this code library with sometimes slightly
@@ -155,17 +198,7 @@
 /*=========================================================================*/
 
 
-/*=========================================================================
-    ADS1x9x settings
-    -----------------------------------------------------------------------
 
-
-    -----------------------------------------------------------------------*/
-
-// Which port/pin is the /DRDY signal connected to?
-#define ADS1x9x_DRDY_PORT (1)
-#define ADS1x9x_DRDY_PIN (5)
-/*=========================================================================*/
 
 
 /*=========================================================================

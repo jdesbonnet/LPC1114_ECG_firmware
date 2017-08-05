@@ -45,9 +45,15 @@ OBJS += cmd_ads1x9x_reg_read.o  cmd_ads1x9x_reg_write.o
 #OBJS += cmd_ads1x9x_reg_read_all.o
 OBJS += cmd_ads1x9x_cmd.o
 OBJS += cmd_ads1x9x_ecg_readn.o 
+OBJS += cmd_ads1x9x_ecg_pace.o 
 OBJS += cmd_ads1x9x_ecg_playback.o
 OBJS += cmd_ads1x9x_temp_read.o
-OBJS += cmd_ads1x9x_ch_cfg.o cmd_ads1x9x_set.o
+OBJS += cmd_ads1x9x_ch_cfg.o 
+OBJS += cmd_ads1x9x_set.o
+OBJS += cmd_ads1x9x_show.o
+OBJS += cmd_ads1x9x_test.o
+OBJS += cmd_bootloader.o
+OBJS += cmd_xbee.o
 
 ##########################################################################
 # Optional driver files 
@@ -159,6 +165,9 @@ endif
 LDFLAGS = -nostartfiles -mcpu=$(CPU_TYPE) -mthumb -Wl,--gc-sections
 LDLIBS  = -lm
 OCFLAGS = --strip-unneeded
+
+CFLAGS += -save-temps 
+CFLAGS += -Wa,-a,-ad 
 
 all: firmware
 

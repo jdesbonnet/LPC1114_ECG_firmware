@@ -49,16 +49,22 @@
 void cmd_help(uint8_t argc, char **argv);         // handled by core/cmd/cmd.c
 void cmd_sysinfo(uint8_t argc, char **argv);
 void cmd_reset(uint8_t argc, char **argv);
+void cmd_bootloader(uint8_t argc, char **argv);
+void cmd_xbee(uint8_t argc, char **argv);
 
 //void cmd_ads1x9x_reg_read_all(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_reg_write(uint8_t argc, char **argv);
 void cmd_ads1x9x_ecg_readn(uint8_t argc, char **argv);
+void cmd_ads1x9x_ecg_pace(uint8_t argc, char **argv);
 void cmd_ads1x9x_ecg_playback(uint8_t argc, char **argv);
 void cmd_ads1x9x_ch_cfg(uint8_t argc, char **argv);
 void cmd_ads1x9x_temp_read(uint8_t argc, char **argv);
 void cmd_ads1x9x_set(uint8_t argc, char **argv);
+void cmd_ads1x9x_show(uint8_t argc, char **argv);
 void cmd_ads1x9x_cmd(uint8_t argc, char **argv);
+void cmd_ads1x9x_test(uint8_t argc, char **argv);
+
 
 #ifdef CFG_CHIBI
 void cmd_chibi_addr(uint8_t argc, char **argv);
@@ -104,13 +110,16 @@ cmd_t cmd_tbl[] =
 	{ "REGR",    1,  1,  0, cmd_ads1x9x_reg_read             , "Read registers"   , "'RREG <reg>'" },
 	{ "REGW",    2,  2,  0, cmd_ads1x9x_reg_write             , "Read registers"   , "'WREG <reg> <val>'" },
 	{ "CMD",    1,  1,  0, cmd_ads1x9x_cmd             , "Issue ADS1x9x command"   , "'CMD <WAKEUP|STANDBY|RESET|START|STOP|OFFSETCAL|RDATAC|SDATAC|RDATA>'" },
-	{ "SET",    1,  2,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
+	{ "SET",    1,  3,  0, cmd_ads1x9x_set             , "General SET command"   , "'SET <what> <val>'" },
+	{ "SHOW",    1,  1,  0, cmd_ads1x9x_show             , "General SHOW command"   , "'SHOW <SYSTICK|CONFIG|...>'" },
 	{ "ECGRN",   1,  2,  0, cmd_ads1x9x_ecg_readn             , "Read/record n ECG records"   , "'ECGRN <n>'" },
 	{ "ECGP",   1,  2,  0, cmd_ads1x9x_ecg_playback             , "Playback ECG from SRAM"   , "'ECGP <A|B>'" },
+	{ "PACE",   0,  0,  0, cmd_ads1x9x_ecg_pace             , "Pace detection"   , "'PACE <threshold> <skip-samples>'" },
 	{ "CCFG",    2,  2,  0, cmd_ads1x9x_ch_cfg, "Configure channal", "'CCFG <ch> <what>'" },
 	{ "TEMP",    0,  0,  0, cmd_ads1x9x_temp_read, "Read temperature", CMD_NOPARAMS },
-
-
+	{ "TEST",    0,  0,  0, cmd_ads1x9x_test, "Test ADS1x9x", CMD_NOPARAMS },
+	{ "BOOTLOADER",    0,  0,  0, cmd_bootloader, "Enter Bootloader", CMD_NOPARAMS },
+	{ "XBEE",    1,  1,  0, cmd_xbee, "Send AT command to XBee", "'XBEE <atcmd>'" },
   #ifdef CFG_CHIBI
   { "A",    0,  1,  0, cmd_chibi_addr        , "Get/Set node address"           , "'A [<1-65534>|<OxFFFE>]'" },
   { "S",    2, 99,  0, cmd_chibi_tx          , "Send msg to node(s)"            , "'S <destaddr> <msg>'" },
@@ -129,7 +138,7 @@ cmd_t cmd_tbl[] =
   { "d",    0,  1,  0,  cmd_sd_dir           , "Dir (SD Card)"                  , "'d [<path>]'" },
   #endif
 
-  { "z",    0,  0,  0,  cmd_deepsleep        , "Deep sleep for ~10 seconds"     , CMD_NOPARAMS },
+  { "z",    0,  1,  0,  cmd_deepsleep        , "Deep sleep"     , "'z [<nsec>]'" },
 };
 
 #endif

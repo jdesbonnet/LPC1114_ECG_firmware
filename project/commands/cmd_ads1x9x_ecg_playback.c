@@ -42,6 +42,7 @@ void cmd_ads1x9x_ecg_playback (uint8_t argc, char **argv)
 			// Lead Off Status + GPIO
 			stream_write_byte(status);
 			stream_write_bytes(buf+3,6);
+			delay(config_var[CONFIG_PLAYBACK_REC_DELAY]);
 			break;
 
 			case OUTPUT_TEXT:
@@ -49,8 +50,11 @@ void cmd_ads1x9x_ecg_playback (uint8_t argc, char **argv)
 			printf ("ch1=%x ", (buf[3]<<16 | buf[4]<<8 | buf[5]) );
 			printf ("ch2=%x ", (buf[6]<<16 | buf[7]<<8 | buf[8]) );
 			printf ("\r\n");
+			delay(config_var[CONFIG_PLAYBACK_REC_DELAY]);
 			break;
 		}
+
+		recordIndex++;
 
 		cmdPoll();
 
